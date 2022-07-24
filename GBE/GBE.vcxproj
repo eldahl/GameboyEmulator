@@ -24,6 +24,7 @@
     <ProjectGuid>{0b12c068-3e0c-4037-b60a-98706b4f0623}</ProjectGuid>
     <RootNamespace>GBC</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>GBE</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -139,10 +140,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cart.cpp" />
     <ClCompile Include="cpu.cpp" />
-    <ClCompile Include="gbc.cpp" />
+    <ClCompile Include="gbe.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cart.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="inst.h" />
   </ItemGroup>
