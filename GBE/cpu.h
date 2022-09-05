@@ -51,5 +51,15 @@ private:
 
 	uint8_t read();
 
+	void setZFlag(uint8_t);
+	void setNFlag(uint8_t);
+	void setHFlag(uint8_t);
+	void setCFlag(uint8_t);
+
+	uint8_t getZFlag();
+	uint8_t getNFlag();
+	uint8_t getHFlag();
+	uint8_t getCFlag();
+
 };
 

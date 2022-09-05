@@ -1,6 +1,8 @@
 #include <iostream>
 #include "cpu.h"
 #include "cart.h"
+#include <iomanip>
+#include <bitset>
 
 bool running = true;
 
@@ -10,7 +12,6 @@ int main(int argc, char* argv[]) {
 
 	cpu* CPU = new cpu(_cart->getRom(), _cart->getRomSize());
 	
-
 	while (running) {
 		CPU->cycle();
 

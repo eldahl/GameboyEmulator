@@ -4,10 +4,10 @@
 #include <iomanip>
 
 uint8_t BootDMG[] = {
-															//
-		0x31,0xfe,0xff,0xaf,0x21,0xff,0x9f,0x32,0xcb,0x7c,0x20,0xfb,0x21,0x26,0xff,0x0e,//
+		                                                        //
+		0x31,0xfe,0xff,0xaf,0x21,0xff,0x9f,0x32,0xcb,0x7c,0x20,0xfb,0x21,0x26,0xff,0x0e,
 		0x11,0x3e,0x80,0x32,0xe2,0x0c,0x3e,0xf3,0xe2,0x32,0x3e,0x77,0x77,0x3e,0xfc,0xe0,
-		0x47,0x11,0x04,0x01,0x21,0x10,0x80,0x1a,0xcd,0x95,0x20,0xcd,0x96,0x20,0x13,0x7b,
+		0x47,0x11,0x04,0x01,0x21,0x10,0x80,0x1a,0xcd,0x95,0x20,0xcd,0x96,0x20,0x13,0x7b, //
 		0xfe,0x34,0x20,0xf3,0x11,0xd8,0x20,0x06,0x08,0x1a,0x13,0x22,0x23,0x05,0x20,0xf9,
 		0x3e,0x19,0xea,0x10,0x99,0x21,0x2f,0x99,0x0e,0x0c,0x3d,0x28,0x08,0x32,0x0d,0x20,
 		0xf9,0x2e,0x0f,0x18,0xf3,0x67,0x3e,0x64,0x57,0xe0,0x42,0x3e,0x91,0xe0,0x40,0x04,
@@ -43,6 +43,59 @@ void cpu::printRegisters() {
 	std::cout << "F: " << "0x" << std::setfill('0') << std::setw(2) << std::hex << (int)reg_F << " - " << std::bitset<8>(reg_F) << std::endl;
 }
 
+void cpu::setZFlag(uint8_t val) {
+	if (val != 0 && val != 1) {
+		std::cout << "Wrong value given for setZFlag" << std::endl;
+		return;
+	}
+	if (val == 1)
+		reg_F |= 0b10000000;
+	else
+		reg_F &= 0b01111111;
+}
+void cpu::setNFlag(uint8_t val) {
+	if (val != 0 && val != 1) {
+		std::cout << "Wrong value given for setNFlag" << std::endl;
+		return;
+	}
+	if (val == 1)
+		reg_F |= 0b01000000;
+	else
+		reg_F &= 0b10111111;
+}
+void cpu::setHFlag(uint8_t val) {
+	if (val != 0 && val != 1) {
+		std::cout << "Wrong value given for setHFlag" << std::endl;
+		return;
+	}
+	if (val == 1)
+		reg_F |= 0b00100000;
+	else
+		reg_F &= 0b11011111;
+}
+void cpu::setCFlag(uint8_t val) {
+	if (val != 0 && val != 1) {
+		std::cout << "Wrong value given for setCFlag" << std::endl;
+		return;
+	}
+	if (val == 1)
+		reg_F |= 0b00010000;
+	else
+		reg_F &= 0b11101111;
+}
+uint8_t cpu::getZFlag() {
+	return (reg_F >> 7) & 0x1;
+}
+uint8_t cpu::getNFlag() {
+	return (reg_F >> 6) & 0x1;
+}
+uint8_t cpu::getHFlag() {
+	return (reg_F >> 5) & 0x1;
+}
+uint8_t cpu::getCFlag() {
+	return (reg_F >> 4) & 0x1;
+}
+
 uint8_t cpu::read() {
 
 	uint8_t op;
@@ -62,6 +115,7 @@ void cpu::cycle() {
 }
 
 void ui(uint8_t op) {
+	std::cout << "\nUnimplemented instruction: " << std::endl;
 	std::cout << std::hex << (int)op << std::endl;
 	while (true);
 }
@@ -82,11 +136,43 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_A_pBC:
 	case inst::DEC_BC:
 		ui(opcode);
+	/*
+	Description:
+		Increment register n.
+	Use with:
+		n = A,B,C,D,E,H,L,(HL)
+	Flags affected:
+		Z - Set if result is zero.
+		N - Reset.
+		H - Set if carry from bit 3.
+		C - Not affected.*/
 	case inst::INC_C: {
 		reg_C++;
+
+		if (reg_C == 0)
+			setZFlag(1);
+		setNFlag(0);
+		if (((reg_C - 1) & 0xF) == 0xF)
+			setHFlag(1);
 	} break;
+	/*
+	Description:
+		Decrement register n.
+	Use with:
+		n = A,B,C,D,E,H,L,(HL)
+	Flags affected:
+		Z - Set if reselt is zero.
+		N - Set.
+		H - Set if no borrow from bit 4.
+		C - Not affected.*/
 	case inst::DEC_C: {
 		reg_C--;
+
+		if (reg_C == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (((reg_C + 1) & 0xF) == 0x0)
+			setHFlag(1);
 	} break;
 	// Load the 8-bit immediate operand d8 into register C.
 	case inst::LD_C_d8: {
@@ -94,16 +180,36 @@ int cpu::opcode(uint8_t opcode)
 	} break;
 	case inst::RRCA:
 	case inst::STOP:
-	case inst::LD_DE_d16:
+		ui(opcode);
+	// Load the 2 bytes of immediate data into register pair DE.
+	case inst::LD_DE_d16: {
+		reg_E = read();
+		reg_D = read();
+	} break;
 	case inst::LD_pDE_A:
 	case inst::INC_DE:
 	case inst::INC_D:
 	case inst::DEC_D:
 	case inst::LD_D_d8:
 	case inst::RLA:
-	case inst::JR_s8:
+	// Jump s8 steps from the current address in the program counter(PC). (Jump relative.)
+	case inst::JR_s8: {
+		int s8 = (signed char)read();
+		pc += s8;
+	} break;
 	case inst::ADD_HL_DE:
-	case inst::LD_A_pDE:
+		ui(opcode);
+
+		// incomplete
+		//setNflag(0);
+		//if (((reg_C + 1) & 0xFFF) == 0x0)
+			//setHflag(1);
+	// Load the 8-bit contents of memory specified by register pair DE into register A.
+	case inst::LD_A_pDE: {
+		uint16_t addr = reg_E;
+		addr += reg_D << 8;
+		reg_A = memory[addr];
+	} break;
 	case inst::DEC_DE:
 	case inst::INC_E:
 	case inst::DEC_E:
@@ -118,15 +224,13 @@ int cpu::opcode(uint8_t opcode)
 			pc += s8;
 			//std::cout << "jumping " << s8 << " steps to address: " << pc << std::endl;
 		}
-	}
-		break;
+	} break;
 	case inst::LD_HL_d16: {
 		uint16_t temp = read();
 		temp += read() << 8;
-		reg_H = temp >> 8;
+		reg_H = (uint8_t)(temp >> 8);
 		reg_L = (uint8_t)temp;
-	}
-		break;
+	} break;
 	case inst::LD_pHL_PLUS_A:
 	case inst::INC_HL:
 	case inst::INC_H:
@@ -149,21 +253,42 @@ int cpu::opcode(uint8_t opcode)
 		uint16_t temp = read();
 		temp += read() << 8;
 		sp = temp;
-	}
-		break;
+	} break;
 	// Store the contents of register A into the memory location specified by register pair HL, 
 	// and simultaneously decrement the contents of HL.
 	case inst::LD_pHL_MINUS_A: {
 		uint16_t addr = reg_H << 8 | reg_L;
 		memory[addr] = reg_A;
 		addr--;
-		reg_H = addr >> 8;
+		reg_H = (uint8_t)(addr >> 8);
 		reg_L = (uint8_t)addr;
-	}
-		break;
+	} break;
 	case inst::INC_SP:
-	case inst::INC_pHL:
-	case inst::DEC_pHL:
+		ui(opcode);
+	// Increment the contents of memory specified by register pair HL by 1.
+	case inst::INC_pHL: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr]++;
+
+		if (memory[addr] == 0)
+			setZFlag(1);
+		setNFlag(0);
+		if (((memory[addr] - 1) & 0xF) == 0x0)
+			setHFlag(1);
+	} break;
+	// Decrement the contents of memory specified by register pair HL by 1.
+	case inst::DEC_pHL: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr]--;
+
+		if (memory[addr] == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (((memory[addr] + 1) & 0xF) == 0x0)
+			setHFlag(1);
+	} break;
 	case inst::LD_pHL_d8:
 	case inst::SCF:
 	case inst::JR_C_r8:
@@ -178,6 +303,7 @@ int cpu::opcode(uint8_t opcode)
 		reg_A = read();
 	} break;
 	case inst::CCF:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::LD_B_B:
 	case inst::LD_B_C:
 	case inst::LD_B_D:
@@ -186,6 +312,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_B_L:
 	case inst::LD_B_pHL:
 	case inst::LD_B_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::LD_C_B:
 	case inst::LD_C_C:
 	case inst::LD_C_D:
@@ -194,6 +321,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_C_L:
 	case inst::LD_C_pHL:
 	case inst::LD_C_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::LD_D_B:
 	case inst::LD_D_C:
 	case inst::LD_D_D:
@@ -202,6 +330,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_D_L:
 	case inst::LD_D_pHL:
 	case inst::LD_D_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::LD_E_B:
 	case inst::LD_E_C:
 	case inst::LD_E_D:
@@ -210,6 +339,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_E_L:
 	case inst::LD_E_pHL:
 	case inst::LD_E_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::LD_H_B:
 	case inst::LD_H_C:
 	case inst::LD_H_D:
@@ -218,6 +348,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_H_L:
 	case inst::LD_H_pHL:
 	case inst::LD_H_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::LD_L_B:
 	case inst::LD_L_C:
 	case inst::LD_L_D:
@@ -226,12 +357,57 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_L_L:
 	case inst::LD_L_pHL:
 	case inst::LD_L_A:
-	case inst::LD_pHL_B:
-	case inst::LD_pHL_C:
-	case inst::LD_pHL_D:
-	case inst::LD_pHL_E:
-	case inst::LD_pHL_H:
-	case inst::LD_pHL_L:
+	////////////////////////////////////////////////////////////////////////////
+	// Store the contents of register N in the memory location specified by register pair HL.
+	case inst::LD_pHL_B: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_B;
+	} break;
+	case inst::LD_pHL_C: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_C;
+	} break;
+	case inst::LD_pHL_D: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_D;
+	} break;
+	case inst::LD_pHL_E: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_E;
+	} break;
+	case inst::LD_pHL_H: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_H;
+	} break;
+	case inst::LD_pHL_L: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_L;
+	} break;
+	// Power down CPU until an interrupt occurs. Use this
+	// when ever possible to reduce energy consumption.
+	/*
+	After a HALT instruction is executed, the system clock is stopped and HALT mode is entered. 
+	Although the system clock is stopped in this status, the oscillator circuit and LCD controller 
+	continue to operate.
+	
+	In addition, the status of the internal RAM register ports remains unchanged.
+	HALT mode is cancelled by an interrupt or reset signal.
+	The program counter is halted at the step after the HALT instruction. 
+	If both the interrupt request flag and the corresponding interrupt enable flag are set, 
+	HALT mode is exited, even if the interrupt master enable flag is not set.
+	
+	Once HALT mode is cancelled, the program starts from the address indicated by the 
+	program counter.
+	If the interrupt master enable flag is set, the contents of the program coounter 
+	are pushed to the stack and control jumps to the starting address of the interrupt.
+	
+	If the RESET terminal goes LOW in HALT mode, the mode becomes that of a normal reset.*/
 	case inst::HALT:
 		ui(opcode);
 	// Store the contents of register A in the memory location specified by register pair HL.
@@ -240,14 +416,36 @@ int cpu::opcode(uint8_t opcode)
 		addr += reg_H << 8;
 		memory[addr] = reg_A;
 	} break;
-	case inst::LD_A_B:
-	case inst::LD_A_C:
-	case inst::LD_A_D:
-	case inst::LD_A_E:
-	case inst::LD_A_H:
-	case inst::LD_A_L:
-	case inst::LD_A_pHL:
-	case inst::LD_A_A:
+	////////////////////////////////////////////////////////////////////////////
+	// Load the contents of register n into register A.
+	case inst::LD_A_B: {
+		reg_A = reg_B;
+	} break;
+	case inst::LD_A_C: {
+		reg_A = reg_C;
+	} break;
+	case inst::LD_A_D: {
+		reg_A = reg_D;
+	} break;
+	case inst::LD_A_E: {
+		reg_A = reg_E;
+	} break;
+	case inst::LD_A_H: {
+		reg_A = reg_H;
+	} break;
+	case inst::LD_A_L: {
+		reg_A = reg_L;
+	} break;
+	// Load the 8-bit contents of memory specified by register pair HL into register A.
+	case inst::LD_A_pHL: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		reg_A = memory[addr];
+	} break;
+	case inst::LD_A_A: {
+		reg_A = reg_A;
+	} break;
+	////////////////////////////////////////////////////////////////////////////
 	case inst::ADD_A_B:
 	case inst::ADD_A_C:
 	case inst::ADD_A_D:
@@ -256,6 +454,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::ADD_A_L:
 	case inst::ADD_A_pHL:
 	case inst::ADD_A_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::ADC_A_B:
 	case inst::ADC_A_C:
 	case inst::ADC_A_D:
@@ -264,6 +463,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::ADC_A_L:
 	case inst::ADC_A_pHL:
 	case inst::ADC_A_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::SUB_B:
 	case inst::SUB_C:
 	case inst::SUB_D:
@@ -272,6 +472,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::SUB_L:
 	case inst::SUB_pHL:
 	case inst::SUB_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::SBC_A_B:
 	case inst::SBC_A_C:
 	case inst::SBC_A_D:
@@ -280,21 +481,164 @@ int cpu::opcode(uint8_t opcode)
 	case inst::SBC_A_L:
 	case inst::SBC_A_pHL:
 	case inst::SBC_A_A:
-	case inst::AND_B:
-	case inst::AND_C:
-	case inst::AND_D:
-	case inst::AND_E:
-	case inst::AND_H:
-	case inst::AND_L:
-	case inst::AND_pHL:
-	case inst::AND_A:
-	case inst::XOR_B:
-	case inst::XOR_C:
-	case inst::XOR_D:
-	case inst::XOR_E:
-	case inst::XOR_H:
-	case inst::XOR_L:
 		ui(opcode);
+	////////////////////////////////////////////////////////////////////////////
+	// Take the logical AND for each bit of the contents of register n 
+	// and the contents of register A, and store the results in register A.
+	/*
+	Description:
+		Logically AND n with A, result in A.
+	Use with :
+		n = A, B, C, D, E, H, L, (HL), #
+	Flags affected :
+		Z - Set if result is zero.
+		N - Reset.
+		H - Set.
+		C - Reset. */
+	case inst::AND_B: {
+		reg_A = reg_B & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	case inst::AND_C: {
+		reg_A = reg_C & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	case inst::AND_D: {
+		reg_A = reg_D & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	case inst::AND_E: {
+		reg_A = reg_E & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	case inst::AND_H: {
+		reg_A = reg_H & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	case inst::AND_L: {
+		reg_A = reg_L & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	// Take the logical AND for each bit of the contents of memory specified by register pair HL
+	// and the contents of register A, and store the results in register A.
+	case inst::AND_pHL: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		
+		reg_A = memory[addr] & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	case inst::AND_A: {
+		reg_A = reg_A & reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(1);
+		setCFlag(0);
+	} break;
+	////////////////////////////////////////////////////////////////////////////
+	// Take the logical exclusive-OR for each bit of the contents of register A
+	// and the contents of register A, and store the results in register A.
+	/*
+	Description:
+		Logical exclusive OR n with register A, result in A.
+	Use with:
+		n = A,B,C,D,E,H,L,(HL),#
+	Flags affected:
+		Z - Set if result is zero.
+		N - Reset.
+		H - Reset.
+		C - Reset. */
+	case inst::XOR_B: {
+		reg_A = reg_B ^ reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
+	case inst::XOR_C: {
+		reg_A = reg_C ^ reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
+	case inst::XOR_D: {
+		reg_A = reg_D ^ reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
+	case inst::XOR_E: {
+		reg_A = reg_E ^ reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
+	case inst::XOR_H: {
+		reg_A = reg_H ^ reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
+	case inst::XOR_L: {
+		reg_A = reg_L ^ reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
 	// Take the logical exclusive-OR for each bit of the contents of memory 
 	// specified by register pair HL and the contents of register A, 
 	// and store the results in register A.
@@ -305,14 +649,33 @@ int cpu::opcode(uint8_t opcode)
 
 		uint8_t data = memory[addr];
 		reg_A = data ^ reg_A;
-	}
-		break;
-	// Take the logical exclusive-OR for each bit of the contents of register A
-	// and the contents of register A, and store the results in register A.
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
 	case inst::XOR_A: {
 		reg_A = reg_A ^ reg_A; 
-	}
-		break;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(0);
+	} break;
+	////////////////////////////////////////////////////////////////////////////
+	/*
+	Description:
+		Logical OR n with register A, result in A.
+	Use with:
+		n = A,B,C,D,E,H,L,(HL),#
+	Flags affected:
+		Z - Set if result is zero.
+		N - Reset.
+		H - Reset.
+		C - Reset. */
 	case inst::OR_B:
 	case inst::OR_C:
 	case inst::OR_D:
@@ -321,6 +684,18 @@ int cpu::opcode(uint8_t opcode)
 	case inst::OR_L:
 	case inst::OR_pHL:
 	case inst::OR_A:
+	////////////////////////////////////////////////////////////////////////////
+	/*
+	Description:
+		Compare A with n. This is basically an A - n
+		subtraction instruction but the results are thrown away.
+	Use with:
+		n = A,B,C,D,E,H,L,(HL),#
+	Flags affected:
+		Z - Set if result is zero. (Set if A = n.)
+		N - Set.
+		H - Set if no borrow from bit 4.
+		C - Set for no borrow. (Set if A < n.) */
 	case inst::CP_B:
 	case inst::CP_C:
 	case inst::CP_D:
@@ -329,6 +704,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::CP_L:
 	case inst::CP_pHL:
 	case inst::CP_A:
+	////////////////////////////////////////////////////////////////////////////
 	case inst::RET_NZ:
 	case inst::POP_BC:
 	case inst::JP_NZ_a16:
@@ -343,7 +719,36 @@ int cpu::opcode(uint8_t opcode)
 	} break;
 	case inst::CALL_NZ_a16:
 	case inst::PUSH_BC:
-	case inst::ADD_A_d8:
+		ui(opcode);
+	/*
+	Description:
+		Add n to A.
+	Use with:
+		n = A,B,C,D,E,H,L,(HL),#
+	Flags affected:
+		Z - Set if result is zero.
+		N - Reset.
+		H - Set if carry from bit 3.
+		C - Set if carry from bit 7. */
+	case inst::ADD_A_d8: {
+		uint8_t d8 = read();
+		uint8_t previousVal = reg_A;
+		reg_A = reg_A + d8;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(0);
+		if (((d8 & 0xf) + (previousVal & 0xf)) & 0x10)
+			setHFlag(1);
+		if (((d8 & 0xff) + (previousVal & 0xff)) & 0x100)
+			setCFlag(1);
+	} break;
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_00H:
 	case inst::RET_Z:
 	case inst::RET:
@@ -354,47 +759,349 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t op = read();
 		
 		switch (op) {
-		case instCB::RLC_B:
-		case instCB::RLC_C:
-		case instCB::RLC_D:
-		case instCB::RLC_E:
-		case instCB::RLC_H:
-		case instCB::RLC_L:
-		case instCB::RLC_pHL:
-		case instCB::RLC_A:
-			break;
+		/*
+		Description:
+			Rotate n left. Old bit 7 to Carry flag.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 7 data. */
+		case instCB::RLC_B: {
+			reg_B = (reg_B << 1) | (reg_B >> 7);
+
+			if (reg_B == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_B & 0x1);
+		} break;
+		case instCB::RLC_C: {
+			reg_C = (reg_C << 1) | (reg_C >> 7);
+
+			if (reg_C == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_C & 0x1);
+		} break;
+		case instCB::RLC_D: {
+			reg_D = (reg_D << 1) | (reg_D >> 7);
+
+			if (reg_D == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_D & 0x1);
+		} break;
+		case instCB::RLC_E: {
+			reg_E = (reg_E << 1) | (reg_E >> 7);
+
+			if (reg_E == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_E & 0x1);
+		} break;
+		case instCB::RLC_H: {
+			reg_H = (reg_H << 1) | (reg_H >> 7);
+
+			if (reg_H == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_H & 0x1);
+		} break;
+		case instCB::RLC_L: {
+			reg_L = (reg_L << 1) | (reg_L >> 7);
+
+			if (reg_L == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_L & 0x1);
+		} break;
+		case instCB::RLC_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] = (memory[addr] << 1) | (memory[addr] >> 7);
+
+			if (memory[addr] == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(memory[addr] & 0x1);
+		} break;
+		case instCB::RLC_A: {
+			reg_A = (reg_A << 1) | (reg_A >> 7);
+
+			if (reg_A == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_A & 0x1);
+		} break;
 		//////////////////////////////////////
-		case instCB::RRC_B:
-		case instCB::RRC_C:
-		case instCB::RRC_D:
-		case instCB::RRC_E:
-		case instCB::RRC_H:
-		case instCB::RRC_L:
-		case instCB::RRC_pHL:
-		case instCB::RRC_A:
-			break;
+		/*
+		Description:
+			Rotate n right. Old bit 0 to Carry flag.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 0 data. */
+		case instCB::RRC_B: {
+			reg_B = (reg_B >> 1) | (reg_B << 7);
+
+			if (reg_B == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_B & 0x1);
+		} break;
+		case instCB::RRC_C: {
+			reg_C = (reg_C >> 1) | (reg_C << 7);
+
+			if (reg_C == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_C & 0x1);
+		} break;
+		case instCB::RRC_D: {
+			reg_D = (reg_D >> 1) | (reg_D << 7);
+
+			if (reg_D == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_D & 0x1);
+		} break;
+		case instCB::RRC_E: {
+			reg_E = (reg_E >> 1) | (reg_E << 7);
+
+			if (reg_E == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_E & 0x1);
+		} break;
+		case instCB::RRC_H: {
+			reg_H = (reg_H >> 1) | (reg_H << 7);
+
+			if (reg_H == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_H & 0x1);
+		} break;
+		case instCB::RRC_L: {
+			reg_L = (reg_L >> 1) | (reg_L << 7);
+
+			if (reg_L == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_L & 0x1);
+		} break;
+		case instCB::RRC_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] = (memory[addr] >> 1) | (memory[addr] << 7);
+
+			if (memory[addr] == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(memory[addr] & 0x1);
+		} break;
+		case instCB::RRC_A: {
+			reg_A = (reg_A >> 1) | (reg_A << 7);
+
+			if (reg_A == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+			setCFlag(reg_A & 0x1);
+		} break;
 		//////////////////////////////////////
-		case instCB::RL_B:
-		case instCB::RL_C:
-		case instCB::RL_D:
-		case instCB::RL_E:
-		case instCB::RL_H:
-		case instCB::RL_L:
-		case instCB::RL_pHL:
-		case instCB::RL_A:
-			break;
+		/*
+		Description:
+			Rotate n left through Carry flag.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 7 data. */
+		case instCB::RL_B: {
+			reg_B = (reg_B << 1) | getCFlag();
+
+			if (reg_B == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_C: {
+			reg_C = (reg_C << 1) | getCFlag();
+
+			if (reg_C == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_D: {
+			reg_D = (reg_D << 1) | getCFlag();
+
+			if (reg_D == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_E: {
+			reg_E = (reg_E << 1) | getCFlag();
+
+			if (reg_E == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_H: {
+			reg_H = (reg_H << 1) | getCFlag();
+
+			if (reg_H == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_L: {
+			reg_L = (reg_L << 1) | getCFlag();
+
+			if (reg_L == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] = (memory[addr] << 1) | getCFlag();
+
+			if (memory[addr] == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RL_A: {
+			reg_A = (reg_A << 1) | getCFlag();
+
+			if (reg_A == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
 		//////////////////////////////////////
-		case instCB::RR_B:
-		case instCB::RR_C:
-		case instCB::RR_D:
-		case instCB::RR_E:
-		case instCB::RR_H:
-		case instCB::RR_L:
-		case instCB::RR_pHL:
-		case instCB::RR_A:
-			break;
+		/*
+		Description:
+			Rotate n right through Carry flag.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 0 data. */
+		case instCB::RR_B: {
+			reg_B = (reg_B >> 1) | (getCFlag() << 7);
+
+			if (reg_B == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_C: {
+			reg_C = (reg_C >> 1) | (getCFlag() << 7);
+
+			if (reg_C == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_D: {
+			reg_D = (reg_D >> 1) | (getCFlag() << 7);
+
+			if (reg_D == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_E: {
+			reg_E = (reg_E >> 1) | (getCFlag() << 7);
+
+			if (reg_E == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_H: {
+			reg_H = (reg_H >> 1) | (getCFlag() << 7);
+
+			if (reg_H == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_L: {
+			reg_L = (reg_L >> 1) | (getCFlag() << 7);
+
+			if (reg_L == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] = (memory[addr] >> 1) | (getCFlag() << 7);
+
+			if (memory[addr] == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::RR_A: {
+			reg_A = (reg_A >> 1) | (getCFlag() << 7);
+
+			if (reg_A == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
 		//////////////////////////////////////
-		case instCB::SLA_B:
+		/*
+		Description:
+			Shift n left into Carry. LSB of n set to 0.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 7 data. */
+		case instCB::SLA_B: {
+			setCFlag((reg_B >> 7) & 0x1);
+			reg_B = reg_B << 1;
+
+			if (reg_B == 0)
+				setZFlag(1);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
 		case instCB::SLA_C:
 		case instCB::SLA_D:
 		case instCB::SLA_E:
@@ -404,6 +1111,16 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::SLA_A:
 			break;
 		//////////////////////////////////////
+		/*
+		Description:
+			Shift n right into Carry. MSB doesn't change.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 0 data. */
 		case instCB::SRA_B:
 		case instCB::SRA_C:
 		case instCB::SRA_D:
@@ -414,6 +1131,16 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::SRA_A:
 			break;
 		//////////////////////////////////////
+		/*
+		Description:
+			Swap upper & lower nibles of n.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Reset. */
 		case instCB::SWAP_B:
 		case instCB::SWAP_C:
 		case instCB::SWAP_D:
@@ -424,6 +1151,16 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::SWAP_A:
 			break;
 		//////////////////////////////////////
+		/*
+		Description:
+			Shift n right into Carry. MSB set to 0.
+		Use with:
+			n = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if result is zero.
+			N - Reset.
+			H - Reset.
+			C - Contains old bit 0 data. */
 		case instCB::SRL_B:
 		case instCB::SRL_C:
 		case instCB::SRL_D:
@@ -436,702 +1173,1151 @@ int cpu::opcode(uint8_t opcode)
 		//////////////////////////////////////
 		// Copy the complement of the contents of bit n in register r
 		// to the Z flag of the program status word (PSW).
+		/*
+		Description:
+			Test bit b in register r.
+		Use with:
+			b = 0 - 7, r = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			Z - Set if bit b of register r is 0.
+			N - Reset.
+			H - Set.
+			C - Not affected. */
 		case instCB::BIT_0_B: {
 			uint8_t bit = reg_B & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_C: {
 			uint8_t bit = reg_C & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_D: {
 			uint8_t bit = reg_D & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_E: {
 			uint8_t bit = reg_E & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_H: {
 			uint8_t bit = reg_H & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_L: {
 			uint8_t bit = reg_L & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_0_A: {
 			uint8_t bit = reg_A & 0b00000001;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
 		case instCB::BIT_1_B: {
 			uint8_t bit = reg_B & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_C: {
 			uint8_t bit = reg_C & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_D: {
 			uint8_t bit = reg_D & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_E: {
 			uint8_t bit = reg_E & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_H: {
 			uint8_t bit = reg_H & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_L: {
 			uint8_t bit = reg_L & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_1_A: {
 			uint8_t bit = reg_A & 0b00000010;
 			bit = bit >> 1;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
 		case instCB::BIT_2_B: {
 			uint8_t bit = reg_B & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_C: {
 			uint8_t bit = reg_C & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_D: {
 			uint8_t bit = reg_D & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_E: {
 			uint8_t bit = reg_E & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_H: {
 			uint8_t bit = reg_H & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_L: {
 			uint8_t bit = reg_L & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_2_A: {
 			uint8_t bit = reg_A & 0b00000100;
 			bit = bit >> 2;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
 		case instCB::BIT_3_B: {
 			uint8_t bit = reg_B & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_C: {
 			uint8_t bit = reg_C & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_D: {
 			uint8_t bit = reg_D & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_E: {
 			uint8_t bit = reg_E & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_H: {
 			uint8_t bit = reg_H & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_L: {
 			uint8_t bit = reg_L & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_3_A: {
 			uint8_t bit = reg_A & 0b00001000;
 			bit = bit >> 3;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
 		case instCB::BIT_4_B: {
 			uint8_t bit = reg_B & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_C:{
 			uint8_t bit = reg_C & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_D: {
 			uint8_t bit = reg_D & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_E: {
 			uint8_t bit = reg_E & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_H: {
 			uint8_t bit = reg_H & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_L: {
 			uint8_t bit = reg_L & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_4_A: {
 			uint8_t bit = reg_A & 0b00010000;
 			bit = bit >> 4;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
 		case instCB::BIT_5_B: {
 			uint8_t bit = reg_B & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_C: {
 			uint8_t bit = reg_C & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_D: {
 			uint8_t bit = reg_D & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_E: {
 			uint8_t bit = reg_E & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_H: {
 			uint8_t bit = reg_H & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_L: {
 			uint8_t bit = reg_L & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_5_A: {
 			uint8_t bit = reg_A & 0b00100000;
 			bit = bit >> 5;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
 		case instCB::BIT_6_B: {
 			uint8_t bit = reg_B & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_C: {
 			uint8_t bit = reg_C & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_D: {
 			uint8_t bit = reg_D & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_E: {
 			uint8_t bit = reg_E & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_H: {
 			uint8_t bit = reg_H & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_L: {
 			uint8_t bit = reg_L & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_6_A: {
 			uint8_t bit = reg_A & 0b01000000;
 			bit = bit >> 6;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
-		//////////////////////////////////////
+			//////////////////////////////////////
 		case instCB::BIT_7_B: {
 			uint8_t bit = reg_B & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_C: {
 			uint8_t bit = reg_C & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_D: {
 			uint8_t bit = reg_D & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_E: {
 			uint8_t bit = reg_E & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_H: {
 			uint8_t bit = reg_H & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_L:
 		{
 			uint8_t bit = reg_L & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_pHL: {
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		case instCB::BIT_7_A: {
 			uint8_t bit = reg_A & 0b10000000;
 			bit = bit >> 7;
-			if (bit)
-				reg_F &= ~(bit << 7);
+			if (bit == 0)
+				setZFlag(1);
 			else
-				reg_F |= !bit << 7;
+				setZFlag(0);
+			setNFlag(0);
+			setHFlag(1);
 		} break;
 		//////////////////////////////////////
-		case instCB::RES_0_B:
-		case instCB::RES_0_C:
-		case instCB::RES_0_D:
-		case instCB::RES_0_E:
-		case instCB::RES_0_H:
-		case instCB::RES_0_L:
-		case instCB::RES_0_pHL:
-		case instCB::RES_0_A:
-			break;
+		/*
+		Description:
+			Reset bit b in register r.
+		Use with:
+			b = 0 - 7, r = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			None. */
+		case instCB::RES_0_B: {
+			reg_B &= 0b11111110;
+		} break;
+		case instCB::RES_0_C: {
+			reg_C &= 0b11111110;
+		} break;
+		case instCB::RES_0_D: {
+			reg_D &= 0b11111110;
+		} break;
+		case instCB::RES_0_E: {
+			reg_E &= 0b11111110;
+		} break;
+		case instCB::RES_0_H: {
+			reg_H &= 0b11111110;
+		} break;
+		case instCB::RES_0_L: {
+			reg_L &= 0b11111110;
+		} break;
+		case instCB::RES_0_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b11111110;
+		} break;
+		case instCB::RES_0_A: {
+			reg_A &= 0b11111110;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_1_B:
-		case instCB::RES_1_C:
-		case instCB::RES_1_D:
-		case instCB::RES_1_E:
-		case instCB::RES_1_H:
-		case instCB::RES_1_L:
-		case instCB::RES_1_pHL:
-		case instCB::RES_1_A:
-			break;
+		case instCB::RES_1_B: {
+			reg_B &= 0b11111101;
+		} break;
+		case instCB::RES_1_C: {
+			reg_C &= 0b11111101;
+		} break;
+		case instCB::RES_1_D: {
+			reg_D &= 0b11111101;
+		} break;
+		case instCB::RES_1_E: {
+			reg_E &= 0b11111101;
+		} break;
+		case instCB::RES_1_H: {
+			reg_H &= 0b11111101;
+		} break;
+		case instCB::RES_1_L: {
+			reg_L &= 0b11111101;
+		} break;
+		case instCB::RES_1_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b11111101;
+		} break;
+		case instCB::RES_1_A: {
+			reg_A &= 0b11111101;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_2_B:
-		case instCB::RES_2_C:
-		case instCB::RES_2_D:
-		case instCB::RES_2_E:
-		case instCB::RES_2_H:
-		case instCB::RES_2_L:
-		case instCB::RES_2_pHL:
-		case instCB::RES_2_A:
-			break;
+		case instCB::RES_2_B: {
+			reg_B &= 0b11111011;
+		} break;
+		case instCB::RES_2_C: {
+			reg_C &= 0b11111011;
+		} break;
+		case instCB::RES_2_D: {
+			reg_D &= 0b11111011;
+		} break;
+		case instCB::RES_2_E: {
+			reg_E &= 0b11111011;
+		} break;
+		case instCB::RES_2_H: {
+			reg_H &= 0b11111011;
+		} break;
+		case instCB::RES_2_L: {
+			reg_L &= 0b11111011;
+		} break;
+		case instCB::RES_2_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b11111011;
+		} break;
+		case instCB::RES_2_A: {
+			reg_A &= 0b11111011;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_3_B:
-		case instCB::RES_3_C:
-		case instCB::RES_3_D:
-		case instCB::RES_3_E:
-		case instCB::RES_3_H:
-		case instCB::RES_3_L:
-		case instCB::RES_3_pHL:
-		case instCB::RES_3_A:
-			break;
+		case instCB::RES_3_B: {
+			reg_B &= 0b11110111;
+		} break;
+		case instCB::RES_3_C: {
+			reg_C &= 0b11110111;
+		} break;
+		case instCB::RES_3_D: {
+			reg_D &= 0b11110111;
+		} break;
+		case instCB::RES_3_E: {
+			reg_E &= 0b11110111;
+		} break;
+		case instCB::RES_3_H: {
+			reg_H &= 0b11110111;
+		} break;
+		case instCB::RES_3_L: {
+			reg_L &= 0b11110111;
+		} break;
+		case instCB::RES_3_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b11110111;
+		} break;
+		case instCB::RES_3_A: {
+			reg_A &= 0b11110111;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_4_B:
-		case instCB::RES_4_C:
-		case instCB::RES_4_D:
-		case instCB::RES_4_E:
-		case instCB::RES_4_H:
-		case instCB::RES_4_L:
-		case instCB::RES_4_pHL:
-		case instCB::RES_4_A:
-			break;
+		case instCB::RES_4_B: {
+			reg_B &= 0b11101111;
+		} break;
+		case instCB::RES_4_C: {
+			reg_C &= 0b11101111;
+		} break;
+		case instCB::RES_4_D: {
+			reg_D &= 0b11101111;
+		} break;
+		case instCB::RES_4_E: {
+			reg_E &= 0b11101111;
+		} break;
+		case instCB::RES_4_H: {
+			reg_H &= 0b11101111;
+		} break;
+		case instCB::RES_4_L: {
+			reg_L &= 0b11101111;
+		} break;
+		case instCB::RES_4_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b11101111;
+		} break;
+		case instCB::RES_4_A: {
+			reg_A &= 0b11101111;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_5_B:
-		case instCB::RES_5_C:
-		case instCB::RES_5_D:
-		case instCB::RES_5_E:
-		case instCB::RES_5_H:
-		case instCB::RES_5_L:
-		case instCB::RES_5_pHL:
-		case instCB::RES_5_A:
-			break;
+		case instCB::RES_5_B: {
+			reg_B &= 0b11011111;
+		} break;
+		case instCB::RES_5_C: {
+			reg_C &= 0b11011111;
+		} break;
+		case instCB::RES_5_D: {
+			reg_D &= 0b11011111;
+		} break;
+		case instCB::RES_5_E: {
+			reg_E &= 0b11011111;
+		} break;
+		case instCB::RES_5_H: {
+			reg_H &= 0b11011111;
+		} break;
+		case instCB::RES_5_L: {
+			reg_L &= 0b11011111;
+		} break;
+		case instCB::RES_5_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b11011111;
+		} break;
+		case instCB::RES_5_A: {
+			reg_A &= 0b11011111;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_6_B:
-		case instCB::RES_6_C:
-		case instCB::RES_6_D:
-		case instCB::RES_6_E:
-		case instCB::RES_6_H:
-		case instCB::RES_6_L:
-		case instCB::RES_6_pHL:
-		case instCB::RES_6_A:
-			break;
+		case instCB::RES_6_B: {
+			reg_B &= 0b10111111;
+		} break;
+		case instCB::RES_6_C: {
+			reg_C &= 0b10111111;
+		} break;
+		case instCB::RES_6_D: {
+			reg_D &= 0b10111111;
+		} break;
+		case instCB::RES_6_E: {
+			reg_E &= 0b10111111;
+		} break;
+		case instCB::RES_6_H: {
+			reg_H &= 0b10111111;
+		} break;
+		case instCB::RES_6_L: {
+			reg_L &= 0b10111111;
+		} break;
+		case instCB::RES_6_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b10111111;
+		} break;
+		case instCB::RES_6_A: {
+			reg_A &= 0b10111111;
+		} break;
 		//////////////////////////////////////
-		case instCB::RES_7_B:
-		case instCB::RES_7_C:
-		case instCB::RES_7_D:
-		case instCB::RES_7_E:
-		case instCB::RES_7_H:
-		case instCB::RES_7_L:
-		case instCB::RES_7_pHL:
-		case instCB::RES_7_A:
-			break;
+		case instCB::RES_7_B: {
+			reg_B &= 0b01111111;
+		} break;
+		case instCB::RES_7_C: {
+			reg_C &= 0b01111111;
+		} break;
+		case instCB::RES_7_D: {
+			reg_D &= 0b01111111;
+		} break;
+		case instCB::RES_7_E: {
+			reg_E &= 0b01111111;
+		} break;
+		case instCB::RES_7_H: {
+			reg_H &= 0b01111111;
+		} break;
+		case instCB::RES_7_L: {
+			reg_L &= 0b01111111;
+		} break;
+		case instCB::RES_7_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] &= 0b01111111;
+		} break;
+		case instCB::RES_7_A: {
+			reg_A &= 0b01111111;
+		} break;
 		//////////////////////////////////////
-		case instCB::SET_0_B:
-		case instCB::SET_0_C:
-		case instCB::SET_0_D:
-		case instCB::SET_0_E:
-		case instCB::SET_0_H:
-		case instCB::SET_0_L:
-		case instCB::SET_0_pHL:
-		case instCB::SET_0_A:
-			break;
+		/*
+		Description:
+			Set bit b in register r.
+		Use with:
+			b = 0 - 7, r = A,B,C,D,E,H,L,(HL)
+		Flags affected:
+			None. */
+		case instCB::SET_0_B: {
+			reg_B |= 0b00000001;
+		} break;
+		case instCB::SET_0_C: {
+			reg_C |= 0b00000001;
+		} break;
+		case instCB::SET_0_D: {
+			reg_D |= 0b00000001;
+		} break;
+		case instCB::SET_0_E: {
+			reg_E |= 0b00000001;
+		} break;
+		case instCB::SET_0_H: {
+			reg_H |= 0b00000001;
+		} break;
+		case instCB::SET_0_L: {
+			reg_L |= 0b00000001;
+		} break;
+		case instCB::SET_0_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b00000001;
+		} break;
+		case instCB::SET_0_A: {
+			reg_A |= 0b00000001;
+		} break;
 		//////////////////////////////////////
-		case instCB::SET_1_B:
-		case instCB::SET_1_C:
-		case instCB::SET_1_D:
-		case instCB::SET_1_E:
-		case instCB::SET_1_H:
-		case instCB::SET_1_L:
-		case instCB::SET_1_pHL:
-		case instCB::SET_1_A:
-			break;
-		//////////////////////////////////////
-		case instCB::SET_2_B:
-		case instCB::SET_2_C:
-		case instCB::SET_2_D:
-		case instCB::SET_2_E:
-		case instCB::SET_2_H:
-		case instCB::SET_2_L:
-		case instCB::SET_2_pHL:
-		case instCB::SET_2_A:
-			break;
-		//////////////////////////////////////
-		case instCB::SET_3_B:
-		case instCB::SET_3_C:
-		case instCB::SET_3_D:
-		case instCB::SET_3_E:
-		case instCB::SET_3_H:
-		case instCB::SET_3_L:
-		case instCB::SET_3_pHL:
-		case instCB::SET_3_A:
-			break;
-		//////////////////////////////////////
-		case instCB::SET_4_B:
-		case instCB::SET_4_C:
-		case instCB::SET_4_D:
-		case instCB::SET_4_E:
-		case instCB::SET_4_H:
-		case instCB::SET_4_L:
-		case instCB::SET_4_pHL:
-		case instCB::SET_4_A:
-			break;
-		//////////////////////////////////////
-		case instCB::SET_5_B:
-		case instCB::SET_5_C:
-		case instCB::SET_5_D:
-		case instCB::SET_5_E:
-		case instCB::SET_5_H:
-		case instCB::SET_5_L:
-		case instCB::SET_5_pHL:
-		case instCB::SET_5_A:
-			break;
-		//////////////////////////////////////
-		case instCB::SET_6_B:
-		case instCB::SET_6_C:
-		case instCB::SET_6_D:
-		case instCB::SET_6_E:
-		case instCB::SET_6_H:
-		case instCB::SET_6_L:
-		case instCB::SET_6_pHL:
-		case instCB::SET_6_A:
-			break;
-		//////////////////////////////////////
-		case instCB::SET_7_B:
-		case instCB::SET_7_C:
-		case instCB::SET_7_D:
-		case instCB::SET_7_E:
-		case instCB::SET_7_H:
-		case instCB::SET_7_L:
-		case instCB::SET_7_pHL:
-		case instCB::SET_7_A:
-			break;
+		case instCB::SET_1_B: {
+			reg_B |= 0b00000010;
+		} break;
+		case instCB::SET_1_C: {
+			reg_C |= 0b00000010;
+		} break;
+		case instCB::SET_1_D: {
+			reg_D |= 0b00000010;
+		} break;
+		case instCB::SET_1_E: {
+			reg_E |= 0b00000010;
+		} break;
+		case instCB::SET_1_H: {
+			reg_H |= 0b00000010;
+		} break;
+		case instCB::SET_1_L: {
+			reg_L |= 0b00000010;
+		} break;
+		case instCB::SET_1_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b00000010;
+		} break;
+		case instCB::SET_1_A: {
+			reg_A |= 0b00000010;
+		} break;
+			//////////////////////////////////////
+		case instCB::SET_2_B: {
+			reg_B |= 0b00000100;
+		} break;
+		case instCB::SET_2_C: {
+			reg_C |= 0b00000100;
+		} break;
+		case instCB::SET_2_D: {
+			reg_D |= 0b00000100;
+		} break;
+		case instCB::SET_2_E: {
+			reg_E |= 0b00000100;
+		} break;
+		case instCB::SET_2_H: {
+			reg_H |= 0b00000100;
+		} break;
+		case instCB::SET_2_L: {
+			reg_L |= 0b00000100;
+		} break;
+		case instCB::SET_2_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b00000100;
+		} break;
+		case instCB::SET_2_A: {
+			reg_A |= 0b00000100;
+		} break;
+			//////////////////////////////////////
+		case instCB::SET_3_B: {
+			reg_B |= 0b00001000;
+		} break;
+		case instCB::SET_3_C: {
+			reg_C |= 0b00001000;
+		} break;
+		case instCB::SET_3_D: {
+			reg_D |= 0b00001000;
+		} break;
+		case instCB::SET_3_E: {
+			reg_E |= 0b00001000;
+		} break;
+		case instCB::SET_3_H: {
+			reg_H |= 0b00001000;
+		} break;
+		case instCB::SET_3_L: {
+			reg_L |= 0b00001000;
+		} break;
+		case instCB::SET_3_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b00001000;
+		} break;
+		case instCB::SET_3_A: {
+			reg_A |= 0b00001000;
+		} break;
+			//////////////////////////////////////
+		case instCB::SET_4_B: {
+			reg_B |= 0b00010000;
+		} break;
+		case instCB::SET_4_C: {
+			reg_C |= 0b00010000;
+		} break;
+		case instCB::SET_4_D: {
+			reg_D |= 0b00010000;
+		} break;
+		case instCB::SET_4_E: {
+			reg_E |= 0b00010000;
+		} break;
+		case instCB::SET_4_H: {
+			reg_H |= 0b00010000;
+		} break;
+		case instCB::SET_4_L: {
+			reg_L |= 0b00010000;
+		} break;
+		case instCB::SET_4_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b00010000;
+		} break;
+		case instCB::SET_4_A: {
+			reg_A |= 0b00010000;
+		} break;
+			//////////////////////////////////////
+		case instCB::SET_5_B: {
+			reg_B |= 0b00100000;
+		} break;
+		case instCB::SET_5_C: {
+			reg_C |= 0b00100000;
+		} break;
+		case instCB::SET_5_D: {
+			reg_D |= 0b00100000;
+		} break;
+		case instCB::SET_5_E: {
+			reg_E |= 0b00100000;
+		} break;
+		case instCB::SET_5_H: {
+			reg_H |= 0b00100000;
+		} break;
+		case instCB::SET_5_L: {
+			reg_L |= 0b00100000;
+		} break;
+		case instCB::SET_5_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b00100000;
+		} break;
+		case instCB::SET_5_A: {
+			reg_A |= 0b00100000;
+		} break;
+			//////////////////////////////////////
+		case instCB::SET_6_B: {
+			reg_B |= 0b01000000;
+		} break;
+		case instCB::SET_6_C: {
+			reg_C |= 0b01000000;
+		} break;
+		case instCB::SET_6_D: {
+			reg_D |= 0b01000000;
+		} break;
+		case instCB::SET_6_E: {
+			reg_E |= 0b01000000;
+		} break;
+		case instCB::SET_6_H: {
+			reg_H |= 0b01000000;
+		} break;
+		case instCB::SET_6_L: {
+			reg_L |= 0b01000000;
+		} break;
+		case instCB::SET_6_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b01000000;
+		} break;
+		case instCB::SET_6_A: {
+			reg_A |= 0b01000000;
+		} break;
+			//////////////////////////////////////
+		case instCB::SET_7_B: {
+			reg_B |= 0b10000000;
+		} break;
+		case instCB::SET_7_C: {
+			reg_C |= 0b10000000;
+		} break;
+		case instCB::SET_7_D: {
+			reg_D |= 0b10000000;
+		} break;
+		case instCB::SET_7_E: {
+			reg_E |= 0b10000000;
+		} break;
+		case instCB::SET_7_H: {
+			reg_H |= 0b10000000;
+		} break;
+		case instCB::SET_7_L: {
+			reg_L |= 0b10000000;
+		} break;
+		case instCB::SET_7_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			memory[addr] |= 0b10000000;
+		} break;
+		case instCB::SET_7_A: {
+			reg_A |= 0b10000000;
+		} break;
 		//////////////////////////////////////
 		default:
 			break;
 		}
 	} break;
 	case inst::CALL_Z_a16:
-	case inst::CALL_a16:
+		ui(opcode);
+	/*
+	Description:
+		Push address of next instruction onto stack and then
+		jump to address nn.
+	Use with:
+		nn = two byte immediate value. (LS byte first.) */
+	case inst::CALL_a16: {
+		// Read a16/nn
+		uint16_t a16 = read();
+		a16 += read() << 8;
+		std::cout << "["  << std::hex << a16 << std::dec << "]";
+		// Put pc address onto stack
+		sp--;
+		memory[sp] = (uint8_t)pc;
+		sp--;
+		memory[sp] = (uint8_t)(pc >> 8);
+		// Jump to a16
+		pc = a16;
+	} break;
 	case inst::ADC_A_d8:
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_08H:
 	case inst::RET_NC:
 	case inst::POP_DE:
@@ -1139,12 +2325,24 @@ int cpu::opcode(uint8_t opcode)
 	case inst::CALL_NC_a16:
 	case inst::PUSH_DE:
 	case inst::SUB_d8:
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_10H:
 	case inst::RET_C:
 	case inst::RETI:
 	case inst::JP_C_a16:
 	case inst::CALL_C_a16:
 	case inst::SBC_A_d8:
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_18H:
 		ui(opcode);
 	// Store the contents of register A in the internal RAM, port register, 
@@ -1154,14 +2352,14 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t addr = read();
 		memory[0xFF00 + addr] = reg_A;
 
+		
 		// If 0xFF50 is set to non-zero, boot rom is disabled.
-		if (addr = 0x50 && memory[0xFF00 + addr] != 0) {
+		if (!booted && addr == 0x50 && memory[0xFF00 + addr] != 0) {
 			booted = true;
 			memcpy(memory, cart, cartSize);
 			/////////////////////////////////////////////////////////////////////////// BOOTED
 		}
-	}
-		break;
+	} break;
 	case inst::POP_HL:
 		ui(opcode);
 	// Store the contents of register A in the internal RAM, port register, 
@@ -1172,11 +2370,23 @@ int cpu::opcode(uint8_t opcode)
 	} break;
 	case inst::PUSH_HL:
 	case inst::AND_a8:
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_20H:
 	case inst::ADD_SP_a8:
 	case inst::JP_pHL:
 	case inst::LD_pa16_A:
 	case inst::XOR_d8:
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_28H:
 	case inst::LDH_A_pa8:
 	case inst::POP_AF:
@@ -1184,21 +2394,37 @@ int cpu::opcode(uint8_t opcode)
 	case inst::DI:
 	case inst::PUSH_AF:
 	case inst::OR_d8:
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_30H:
 	case inst::LD_HL_SPplusr8:
 	case inst::LD_SP_HL:
 	case inst::LD_A_pa16:
 	case inst::EI:
 	case inst::CP_d8:
-	case inst::RST_38H:
 		ui(opcode);
-
+	/*
+	Description:
+		Push present address onto stack.
+		Jump to address $0000 + n.
+	Use with:
+		n = $00,$08,$10,$18,$20,$28,$30,$38 */
+	case inst::RST_38H: {
+		sp--;
+		memory[sp] = (uint8_t)(pc >> 8);
+		sp--;
+		memory[sp] = (uint8_t)pc;
+		pc = 0x0000 + 0x38;
+	} break;
 	default:
 		printf("[opcode]: Unknown instruction: %x\n", opcode);
 		break;
 	}
 
 	std::cout << "|" << std::hex << (int)opcode << std::dec << "|";
-
 	return 0;
 }
