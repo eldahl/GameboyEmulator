@@ -1,2 +1,4 @@
-﻿  gbe.cpp
+﻿  cpu.cpp
+  gbe.cpp
+  Generating Code...
   GBE.vcxproj -> C:\Users\Esben\source\repos\GameboyEmulator\x64\Debug\GBE.exe
