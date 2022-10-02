@@ -1,8 +1,7 @@
 #include <iostream>
 #include "cpu.h"
 #include "cart.h"
-#include <iomanip>
-#include <bitset>
+
 
 bool running = true;
 
