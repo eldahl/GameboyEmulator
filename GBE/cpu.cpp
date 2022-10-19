@@ -15,7 +15,7 @@ uint8_t BootDMG[] = {
 		0x0E,0x13,0x24,0x7C,0x1E,0x83,0xFE,0x62,0x28,0x06,0x1E,0xC1,0xFE,0x64,0x20,0x06,
 		0x7B,0xE2,0x0C,0x3E,0x87,0xE2,0xF0,0x42,0x90,0xE0,0x42,0x15,0x20,0xD2,0x05,0x20,
 		0x4F,0x16,0x20,0x18,0xCB,0x4F,0x06,0x04,0xC5,0xCB,0x11,0x17,0xC1,0xCB,0x11,0x17,
-		0x05,0x20,0xF5,0x22,0x23,0x22,0x23,0xC9,0xCE,0xED,0x66,0x66,0xCC,0x0D,0x00,0x0B,
+	    0x05,0x20,0xF5,0x22,0x23,0x22,0x23,0xC9,0xCE,0xED,0x66,0x66,0xCC,0x0D,0x00,0x0B, // <<----
 		0x03,0x73,0x00,0x83,0x00,0x0C,0x00,0x0D,0x00,0x08,0x11,0x1F,0x88,0x89,0x00,0x0E,
 		0xDC,0xCC,0x6E,0xE6,0xDD,0xDD,0xD9,0x99,0xBB,0xBB,0x67,0x63,0x6E,0x0E,0xEC,0xCC,
 		0xDD,0xDC,0x99,0x9F,0xBB,0xB9,0x33,0x3E,0x3C,0x42,0xB9,0xA5,0xB9,0xA5,0x42,0x3C,
@@ -126,8 +126,25 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_BC_d16:
 	case inst::LD_pBC_A:
 	case inst::INC_BC:
-	case inst::INC_B:
-	case inst::DEC_B:
+		ui(opcode);
+	case inst::INC_B: {
+		reg_B++;
+
+		if (reg_B == 0)
+			setZFlag(1);
+		setNFlag(0);
+		if (((reg_B) & 0xF) == 0xF)
+			setHFlag(1);
+	} break;
+	case inst::DEC_B: {
+		reg_B--;
+
+		if (reg_B == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((reg_B) & 0xF) == 0x0))
+			setHFlag(1);
+	} break;
 	case inst::LD_B_d8: {
 		reg_B = read();
 	} break;
@@ -153,7 +170,7 @@ int cpu::opcode(uint8_t opcode)
 		if (reg_C == 0)
 			setZFlag(1);
 		setNFlag(0);
-		if (((reg_C - 1) & 0xF) == 0xF)
+		if (((reg_C) & 0xF) == 0xF)
 			setHFlag(1);
 	} break;
 	/*
@@ -172,7 +189,7 @@ int cpu::opcode(uint8_t opcode)
 		if (reg_C == 0)
 			setZFlag(1);
 		setNFlag(1);
-		if (!(((reg_C + 1) & 0xF) == 0x0))
+		if (!(((reg_C) & 0xF) == 0x0))
 			setHFlag(1);
 	} break;
 	// Load the 8-bit immediate operand d8 into register C.
@@ -189,10 +206,41 @@ int cpu::opcode(uint8_t opcode)
 	} break;
 	case inst::LD_pDE_A:
 	case inst::INC_DE:
-	case inst::INC_D:
-	case inst::DEC_D:
+		ui(opcode);
+	case inst::INC_D: {
+		reg_D++;
+
+		if (reg_D == 0)
+			setZFlag(1);
+		setNFlag(0);
+
+		// This is wrong
+		if ((reg_D & 0xF) == 0xF)
+			setHFlag(1);
+
+	} break;
+	case inst::DEC_D: {
+		reg_D--;
+
+		if (reg_D == 0)
+			setZFlag(1);
+		setNFlag(1);
+		// This is wrong
+		if ((reg_D & 0xF) == 0x0)
+			setHFlag(1);
+	} break;
 	case inst::LD_D_d8:
-	case inst::RLA:
+		ui(opcode);
+	case inst::RLA: {
+		uint8_t bit = (reg_A >> 7) & 0x1;
+		reg_A = reg_A << 1;
+
+		if (1 == 0)
+			setZFlag(1);
+		setNFlag(0);
+		setHFlag(0);
+		setCFlag(bit);
+	} break;
 	// Jump s8 steps from the current address in the program counter(PC). (Jump relative.)
 	case inst::JR_s8: {
 		int s8 = (signed char)read();
@@ -212,9 +260,32 @@ int cpu::opcode(uint8_t opcode)
 		reg_A = memory[addr];
 	} break;
 	case inst::DEC_DE:
-	case inst::INC_E:
-	case inst::DEC_E:
-	case inst::LD_E_d8:
+		ui(opcode);
+	case inst::INC_E: {
+		reg_E++;
+
+		if (reg_E == 0)
+			setZFlag(1);
+		setNFlag(0);
+
+		// This is wrong
+		if ((reg_E & 0xF) == 0xF)
+			setHFlag(1);
+
+	} break;
+	case inst::DEC_E: {
+		reg_E--;
+
+		if (reg_E == 0)
+			setZFlag(1);
+		setNFlag(1);
+		// This is wrong
+		if ((reg_E & 0xF) == 0x0)
+			setHFlag(1);
+	} break;
+	case inst::LD_E_d8: {
+		reg_E = read();
+	} break;
 	case inst::RRA:
 		ui(opcode);
 	// If the Z flag is 0, jump s8 steps from the current address stored in the program counter (PC).
@@ -232,10 +303,48 @@ int cpu::opcode(uint8_t opcode)
 		reg_H = (uint8_t)(temp >> 8);
 		reg_L = (uint8_t)temp;
 	} break;
-	case inst::LD_pHL_PLUS_A:
-	case inst::INC_HL:
-	case inst::INC_H:
-	case inst::DEC_H:
+	case inst::LD_pHL_PLUS_A: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr] = reg_A;
+		addr++;
+		reg_L = addr & 0xFF;
+		reg_H = (addr >> 8) & 0xFF;
+	} break;
+	case inst::INC_HL: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+		memory[addr]++;
+		
+		if (memory[addr] == 0)
+			setZFlag(1);
+		setNFlag(0);
+
+		// This is wrong
+		if ((memory[addr] & 0xF) == 0xF)
+			setHFlag(1);
+	} break;
+	case inst::INC_H: {
+		reg_H++;
+
+		if (reg_H == 0)
+			setZFlag(1);
+		setNFlag(0);
+
+		// This is wrong
+		if ((reg_H & 0xF) == 0xF)
+			setHFlag(1);
+	} break;
+	case inst::DEC_H: {
+		reg_H--;
+
+		if (reg_H == 0)
+			setZFlag(1);
+		setNFlag(1);
+		// This is wrong
+		if ((reg_H & 0xF) == 0x0)
+			setHFlag(1);
+	} break;
 	case inst::LD_H_d8:
 	case inst::DAA:
 		ui(opcode);
@@ -492,14 +601,113 @@ int cpu::opcode(uint8_t opcode)
 	case inst::ADC_A_pHL:
 	case inst::ADC_A_A:
 	////////////////////////////////////////////////////////////////////////////
-	case inst::SUB_B:
-	case inst::SUB_C:
-	case inst::SUB_D:
-	case inst::SUB_E:
-	case inst::SUB_H:
-	case inst::SUB_L:
-	case inst::SUB_pHL:
-	case inst::SUB_A:
+	/*
+	Description:
+		Subtract n from A.
+	Flags affected:
+		Z - Set if result is zero.
+		N - Set.
+		H - Set if no borrow from bit 4.
+		C - Set if no borrow.*/
+	case inst::SUB_B: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_B;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (reg_B & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > reg_B)
+			setCFlag(1);
+	} break;
+	case inst::SUB_C: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_C;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (reg_C & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > reg_C)
+			setCFlag(1);
+	} break;
+	case inst::SUB_D: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_D;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (reg_D & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > reg_D)
+			setCFlag(1);
+	} break;
+	case inst::SUB_E: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_E;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (reg_E & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > reg_E)
+			setCFlag(1);
+	} break;
+	case inst::SUB_H: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_H;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (reg_H & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > reg_H)
+			setCFlag(1);
+	} break;
+	case inst::SUB_L: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_L;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (reg_L & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > reg_L)
+			setCFlag(1);
+	} break;
+	case inst::SUB_pHL: {
+		uint16_t addr = reg_L;
+		addr += reg_H << 8;
+
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - memory[addr];
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (memory[addr] & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > memory[addr])
+			setCFlag(1);
+	} break;
+	case inst::SUB_A: {
+		uint8_t previousRegAVal = reg_A;
+		reg_A = reg_A - reg_A;
+
+		if (reg_A == 0)
+			setZFlag(1);
+		setNFlag(1);
+		if (!(((previousRegAVal & 0xf) - (previousRegAVal & 0xf)) < 0x0))
+			setHFlag(1);
+		if (previousRegAVal > previousRegAVal)
+			setCFlag(1);
+	} break;
 	////////////////////////////////////////////////////////////////////////////
 	case inst::SBC_A_B:
 	case inst::SBC_A_C:
@@ -734,7 +942,12 @@ int cpu::opcode(uint8_t opcode)
 	case inst::CP_A:
 	////////////////////////////////////////////////////////////////////////////
 	case inst::RET_NZ:
-	case inst::POP_BC:
+		ui(opcode);
+	case inst::POP_BC: {
+		reg_C = memory[sp++];
+		reg_B = memory[sp++];
+
+	} break;
 	case inst::JP_NZ_a16:
 		ui(opcode);
 	// Load the 16-bit immediate operand a16 into the program counter (PC). 
@@ -754,10 +967,8 @@ int cpu::opcode(uint8_t opcode)
 	*/
 	case inst::PUSH_BC: {
 		// Put register pair BC onto stack
-		sp--;
-		memory[sp] = reg_B;
-		sp--;
-		memory[sp] = reg_C;
+		memory[--sp] = reg_B;
+		memory[--sp] = reg_C;
 	} break;
 	/*
 	Description:
@@ -790,7 +1001,14 @@ int cpu::opcode(uint8_t opcode)
 		n = $00,$08,$10,$18,$20,$28,$30,$38 */
 	case inst::RST_00H:
 	case inst::RET_Z:
-	case inst::RET:
+		ui(opcode);
+	case inst::RET: {
+		uint16_t addr = memory[sp++] << 8;
+		addr += memory[sp++];
+		pc = addr;
+		
+		std::cout << "[" << std::hex << addr << std::dec << "]";
+	} break;
 	case inst::JP_Z_a16:
 		ui(opcode);
 	// CB Prefix instructions
@@ -2345,10 +2563,8 @@ int cpu::opcode(uint8_t opcode)
 		a16 += read() << 8;
 		std::cout << "["  << std::hex << a16 << std::dec << "]";
 		// Put pc address onto stack
-		sp--;
-		memory[sp] = (uint8_t)pc;
-		sp--;
-		memory[sp] = (uint8_t)(pc >> 8);
+		memory[--sp] = (uint8_t)pc;
+		memory[--sp] = (uint8_t)(pc >> 8);
 		// Jump to a16
 		pc = a16;
 	} break;
@@ -2439,10 +2655,18 @@ int cpu::opcode(uint8_t opcode)
 		reg_A = memory[0xFF00 + addr];
 
 	} break;
-	case inst::POP_AF:
+	case inst::POP_AF: {
+		reg_A = memory[sp++];
+		reg_F = memory[sp++];
+	} break;
 	case inst::LD_A_pC:
 	case inst::DI:
-	case inst::PUSH_AF:
+		ui(opcode);
+	case inst::PUSH_AF: {
+		// Put register pair BC onto stack
+		memory[--sp] = reg_A;
+		memory[--sp] = reg_F;
+	} break;
 	case inst::OR_d8:
 	/*
 	Description:
