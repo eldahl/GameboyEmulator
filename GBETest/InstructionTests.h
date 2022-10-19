@@ -6,7 +6,7 @@ class InstructionTests : public ::testing::Test {
 protected:
 
     void SetUp() override {
-        Cart = new cart("../tetris.gb");
+        Cart = new cart("../../roms/tetris.gb");
         CPU = new cpu(Cart->getRom(), Cart->getRomSize());
     }
 

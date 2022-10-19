@@ -2476,10 +2476,7 @@ int cpu::opcode(uint8_t opcode)
 			setZFlag(1);
 		setNFlag(1);
 
-		///////////////////////////////////////////////////////////////////////
-		// TODO: test for correct behaviour
-		///////////////////////////////////////////////////////////////////////
-		if (((reg_A ^ d8 ^ result) & 0x10) == 0x0)
+		if (!(((reg_A & 0xf) - (d8 & 0xf)) < 0x0))
 			setHFlag(1);
 
 		if (reg_A < d8)
