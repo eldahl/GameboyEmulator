@@ -60,7 +60,5 @@ private:
 	void setNFlag(uint8_t);
 	void setHFlag(uint8_t);
 	void setCFlag(uint8_t);
-	
-
 };
 

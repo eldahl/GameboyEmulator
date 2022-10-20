@@ -125,25 +125,27 @@ int cpu::opcode(uint8_t opcode)
 	case inst::NOP:
 	case inst::LD_BC_d16:
 	case inst::LD_pBC_A:
-	case inst::INC_BC:
 		ui(opcode);
+	case inst::INC_BC: {
+		uint16_t reg = reg_C;
+		reg += reg_B << 8;
+		reg++;
+		reg_C = (uint8_t)reg;
+		reg_B = (uint8_t)(reg >> 8);
+	} break;
 	case inst::INC_B: {
 		reg_B++;
 
-		if (reg_B == 0)
-			setZFlag(1);
+		setZFlag(reg_B == 0);
 		setNFlag(0);
-		if (((reg_B) & 0xF) == 0xF)
-			setHFlag(1);
+		setHFlag(((reg_B) & 0xF) == 0xF);
 	} break;
 	case inst::DEC_B: {
 		reg_B--;
 
-		if (reg_B == 0)
-			setZFlag(1);
+		setZFlag(reg_B == 0);
 		setNFlag(1);
-		if (!(((reg_B) & 0xF) == 0x0))
-			setHFlag(1);
+		setHFlag(!(((reg_B) & 0xF) == 0x0));
 	} break;
 	case inst::LD_B_d8: {
 		reg_B = read();
@@ -152,8 +154,14 @@ int cpu::opcode(uint8_t opcode)
 	case inst::LD_pa16_SP:
 	case inst::ADD_HL_BC:
 	case inst::LD_A_pBC:
-	case inst::DEC_BC:
 		ui(opcode);
+	case inst::DEC_BC: {
+		uint16_t reg = reg_C;
+		reg += reg_B << 8;
+		reg--;
+		reg_C = (uint8_t)reg;
+		reg_B = (uint8_t)(reg >> 8); 
+	} break;
 	/*
 	Description:
 		Increment register n.
@@ -167,11 +175,9 @@ int cpu::opcode(uint8_t opcode)
 	case inst::INC_C: {
 		reg_C++;
 
-		if (reg_C == 0)
-			setZFlag(1);
+		setZFlag(reg_C == 0);
 		setNFlag(0);
-		if (((reg_C) & 0xF) == 0xF)
-			setHFlag(1);
+		setHFlag(((reg_C) & 0xF) == 0xF);
 	} break;
 	/*
 	Description:
@@ -186,11 +192,9 @@ int cpu::opcode(uint8_t opcode)
 	case inst::DEC_C: {
 		reg_C--;
 
-		if (reg_C == 0)
-			setZFlag(1);
+		setZFlag(reg_C == 0);
 		setNFlag(1);
-		if (!(((reg_C) & 0xF) == 0x0))
-			setHFlag(1);
+		setHFlag(!(((reg_C) & 0xF) == 0x0));
 	} break;
 	// Load the 8-bit immediate operand d8 into register C.
 	case inst::LD_C_d8: {
@@ -205,29 +209,31 @@ int cpu::opcode(uint8_t opcode)
 		reg_D = read();
 	} break;
 	case inst::LD_pDE_A:
-	case inst::INC_DE:
 		ui(opcode);
+	case inst::INC_DE: {
+		uint16_t reg = reg_E;
+		reg += reg_D << 8;
+		reg++;
+		reg_E = (uint8_t)reg;
+		reg_D = (uint8_t)(reg >> 8);
+	} break;
 	case inst::INC_D: {
 		reg_D++;
 
-		if (reg_D == 0)
-			setZFlag(1);
+		setZFlag(reg_D == 0);
 		setNFlag(0);
 
 		// This is wrong
-		if ((reg_D & 0xF) == 0xF)
-			setHFlag(1);
+		setHFlag((reg_D & 0xF) == 0xF);
 
 	} break;
 	case inst::DEC_D: {
 		reg_D--;
 
-		if (reg_D == 0)
-			setZFlag(1);
+		setZFlag(reg_D == 0);
 		setNFlag(1);
 		// This is wrong
-		if ((reg_D & 0xF) == 0x0)
-			setHFlag(1);
+		setHFlag((reg_D & 0xF) == 0x0);
 	} break;
 	case inst::LD_D_d8:
 		ui(opcode);
@@ -235,8 +241,7 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t bit = (reg_A >> 7) & 0x1;
 		reg_A = reg_A << 1;
 
-		if (1 == 0)
-			setZFlag(1);
+		setZFlag(0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(bit);
@@ -259,29 +264,30 @@ int cpu::opcode(uint8_t opcode)
 		addr += reg_D << 8;
 		reg_A = memory[addr];
 	} break;
-	case inst::DEC_DE:
-		ui(opcode);
+	case inst::DEC_DE: {
+		uint16_t reg = reg_E;
+		reg += reg_D << 8;
+		reg--;
+		reg_E = (uint8_t)reg;
+		reg_D = (uint8_t)(reg >> 8);
+	} break;
 	case inst::INC_E: {
 		reg_E++;
 
-		if (reg_E == 0)
-			setZFlag(1);
+		setZFlag(reg_E == 0);
 		setNFlag(0);
 
 		// This is wrong
-		if ((reg_E & 0xF) == 0xF)
-			setHFlag(1);
+		setHFlag((reg_E & 0xF) == 0xF);
 
 	} break;
 	case inst::DEC_E: {
 		reg_E--;
 
-		if (reg_E == 0)
-			setZFlag(1);
+		setZFlag(reg_E == 0);
 		setNFlag(1);
 		// This is wrong
-		if ((reg_E & 0xF) == 0x0)
-			setHFlag(1);
+		setHFlag((reg_E & 0xF) == 0x0);
 	} break;
 	case inst::LD_E_d8: {
 		reg_E = read();
@@ -294,7 +300,7 @@ int cpu::opcode(uint8_t opcode)
 		int s8 = (signed char)read();
 		if (((reg_F >> 7) & 0x01) == 0) {
 			pc += s8;
-			//std::cout << "jumping " << s8 << " steps to address: " << pc << std::endl;
+			std::cout << " jumping " << s8 << " steps to address: " << pc;
 		}
 	} break;
 	case inst::LD_HL_d16: {
@@ -314,36 +320,26 @@ int cpu::opcode(uint8_t opcode)
 	case inst::INC_HL: {
 		uint16_t addr = reg_L;
 		addr += reg_H << 8;
-		memory[addr]++;
-		
-		if (memory[addr] == 0)
-			setZFlag(1);
-		setNFlag(0);
-
-		// This is wrong
-		if ((memory[addr] & 0xF) == 0xF)
-			setHFlag(1);
+		addr++;
+		reg_L = (uint8_t)addr;
+		reg_H = (uint8_t)(addr >> 8);
 	} break;
 	case inst::INC_H: {
 		reg_H++;
 
-		if (reg_H == 0)
-			setZFlag(1);
+		setZFlag(reg_H == 0);
 		setNFlag(0);
 
 		// This is wrong
-		if ((reg_H & 0xF) == 0xF)
-			setHFlag(1);
+		setHFlag((reg_H & 0xF) == 0xF);
 	} break;
 	case inst::DEC_H: {
 		reg_H--;
 
-		if (reg_H == 0)
-			setZFlag(1);
+		setZFlag(reg_H == 0);
 		setNFlag(1);
 		// This is wrong
-		if ((reg_H & 0xF) == 0x0)
-			setHFlag(1);
+		setHFlag((reg_H & 0xF) == 0x0);
 	} break;
 	case inst::LD_H_d8:
 	case inst::DAA:
@@ -357,9 +353,31 @@ int cpu::opcode(uint8_t opcode)
 	} break;
 	case inst::ADD_HL_HL:
 	case inst::LD_A_pHL_PLUS:
-	case inst::DEC_HL:
-	case inst::INC_L:
-	case inst::DEC_L:
+		ui(opcode);
+	case inst::DEC_HL: {
+		uint16_t reg = reg_L;
+		reg += reg_H << 8;
+		reg--;
+		reg_L = (uint8_t)reg;
+		reg_H = (uint8_t)(reg >> 8);
+	} break;
+	case inst::INC_L: {
+		reg_L++;
+
+		setZFlag(reg_L == 0);
+		setNFlag(0);
+
+		// This is wrong
+		setHFlag((reg_L & 0xF) == 0xF);
+	} break;
+	case inst::DEC_L: {
+		reg_L--;
+
+		setZFlag(reg_L == 0);
+		setNFlag(1);
+		// This is wrong
+		setHFlag((reg_L & 0xF) == 0x0);
+	} break;
 	case inst::LD_L_d8:
 	case inst::CPL:
 	case inst::JR_NC_s8:
@@ -380,8 +398,9 @@ int cpu::opcode(uint8_t opcode)
 		reg_H = (uint8_t)(addr >> 8);
 		reg_L = (uint8_t)addr;
 	} break;
-	case inst::INC_SP:
-		ui(opcode);
+	case inst::INC_SP: {
+		sp++;
+	} break;
 	// Increment the contents of memory specified by register pair HL by 1.
 	/*
 	Description:
@@ -398,11 +417,9 @@ int cpu::opcode(uint8_t opcode)
 		addr += reg_H << 8;
 		memory[addr]++;
 
-		if (memory[addr] == 0)
-			setZFlag(1);
+		setZFlag(memory[addr] == 0);
 		setNFlag(0);
-		if (((memory[addr] - 1) & 0xF) == 0xF)
-			setHFlag(1);
+		setHFlag(((memory[addr] - 1) & 0xF) == 0xF);
 	} break;
 	// Decrement the contents of memory specified by register pair HL by 1.
 	/*
@@ -420,20 +437,36 @@ int cpu::opcode(uint8_t opcode)
 		addr += reg_H << 8;
 		memory[addr]--;
 
-		if (memory[addr] == 0)
-			setZFlag(1);
+		setZFlag(memory[addr] == 0);
 		setNFlag(1);
-		if (!(((memory[addr] + 1) & 0xF) == 0x0))
-			setHFlag(1);
+		setHFlag(!(((memory[addr]) & 0xF) == 0x0));
 	} break;
 	case inst::LD_pHL_d8:
 	case inst::SCF:
 	case inst::JR_C_r8:
 	case inst::ADD_HL_SP:
 	case inst::LD_A_pHL_MINUS:
-	case inst::DEC_SP:
-	case inst::INC_A:
-	case inst::DEC_A:
+		ui(opcode);
+	case inst::DEC_SP: {
+		sp--;
+	} break;
+	case inst::INC_A: {
+		reg_A++;
+
+		setZFlag(reg_A == 0);
+		setNFlag(0);
+
+		// This is wrong
+		setHFlag((reg_A & 0xF) == 0xF);
+	} break;
+	case inst::DEC_A: {
+		reg_A--;
+
+		setZFlag(reg_A == 0);
+		setNFlag(1);
+		// This is wrong
+		setHFlag((reg_A & 0xF) == 0x0);
+	} break;
 		ui(opcode);
 	// Load the 8-bit immediate operand d8 into register A.
 	case inst::LD_A_d8:	{
@@ -613,73 +646,55 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_B;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (reg_B & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > reg_B)
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (reg_B & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > reg_B);
 	} break;
 	case inst::SUB_C: {
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_C;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (reg_C & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > reg_C)
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (reg_C & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > reg_C);
 	} break;
 	case inst::SUB_D: {
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_D;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (reg_D & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > reg_D)
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (reg_D & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > reg_D);
 	} break;
 	case inst::SUB_E: {
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_E;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (reg_E & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > reg_E)
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (reg_E & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > reg_E);
 	} break;
 	case inst::SUB_H: {
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_H;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (reg_H & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > reg_H)
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (reg_H & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > reg_H);
 	} break;
 	case inst::SUB_L: {
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_L;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (reg_L & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > reg_L)
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (reg_L & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > reg_L);
 	} break;
 	case inst::SUB_pHL: {
 		uint16_t addr = reg_L;
@@ -688,25 +703,19 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - memory[addr];
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (memory[addr] & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > memory[addr])
-			setCFlag(1);
+		setHFlag(!(((previousRegAVal & 0xf) - (memory[addr] & 0xf)) < 0x0));
+		setCFlag(previousRegAVal > memory[addr]);
 	} break;
 	case inst::SUB_A: {
 		uint8_t previousRegAVal = reg_A;
 		reg_A = reg_A - reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(1);
-		if (!(((previousRegAVal & 0xf) - (previousRegAVal & 0xf)) < 0x0))
-			setHFlag(1);
-		if (previousRegAVal > previousRegAVal)
-			setCFlag(1);
+		setHFlag(0);
+		setCFlag(0);
 	} break;
 	////////////////////////////////////////////////////////////////////////////
 	case inst::SBC_A_B:
@@ -734,8 +743,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_B: {
 		reg_A = reg_B & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -743,8 +751,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_C: {
 		reg_A = reg_C & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -752,8 +759,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_D: {
 		reg_A = reg_D & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -761,8 +767,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_E: {
 		reg_A = reg_E & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -770,8 +775,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_H: {
 		reg_A = reg_H & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -779,22 +783,20 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_L: {
 		reg_A = reg_L & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
 	} break;
-	// Take the logical AND for each bit of the contents of memory specified by register pair HL
-	// and the contents of register A, and store the results in register A.
+		// Take the logical AND for each bit of the contents of memory specified by register pair HL
+		// and the contents of register A, and store the results in register A.
 	case inst::AND_pHL: {
 		uint16_t addr = reg_L;
 		addr += reg_H << 8;
-		
+
 		reg_A = memory[addr] & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -802,8 +804,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::AND_A: {
 		reg_A = reg_A & reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(1);
 		setCFlag(0);
@@ -824,8 +825,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::XOR_B: {
 		reg_A = reg_B ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
@@ -833,8 +833,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::XOR_C: {
 		reg_A = reg_C ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
@@ -842,8 +841,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::XOR_D: {
 		reg_A = reg_D ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
@@ -851,8 +849,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::XOR_E: {
 		reg_A = reg_E ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
@@ -860,8 +857,7 @@ int cpu::opcode(uint8_t opcode)
 	case inst::XOR_H: {
 		reg_A = reg_H ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
@@ -869,15 +865,14 @@ int cpu::opcode(uint8_t opcode)
 	case inst::XOR_L: {
 		reg_A = reg_L ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
 	} break;
-	// Take the logical exclusive-OR for each bit of the contents of memory 
-	// specified by register pair HL and the contents of register A, 
-	// and store the results in register A.
+		// Take the logical exclusive-OR for each bit of the contents of memory 
+		// specified by register pair HL and the contents of register A, 
+		// and store the results in register A.
 	case inst::XOR_pHL: {
 		// Get address
 		uint16_t addr = reg_L;
@@ -886,17 +881,15 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t data = memory[addr];
 		reg_A = data ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
 	} break;
 	case inst::XOR_A: {
-		reg_A = reg_A ^ reg_A; 
+		reg_A = reg_A ^ reg_A;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
 		setHFlag(0);
 		setCFlag(0);
@@ -985,13 +978,10 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t previousVal = reg_A;
 		reg_A = reg_A + d8;
 
-		if (reg_A == 0)
-			setZFlag(1);
+		setZFlag(reg_A == 0);
 		setNFlag(0);
-		if (((d8 & 0xf) + (previousVal & 0xf)) & 0x10)
-			setHFlag(1);
-		if (((d8 & 0xff) + (previousVal & 0xff)) & 0x100)
-			setCFlag(1);
+		setHFlag(((d8 & 0xf) + (previousVal & 0xf)) & 0x10);
+		setCFlag(((d8 & 0xff) + (previousVal & 0xff)) & 0x100);
 	} break;
 	/*
 	Description:
@@ -1007,7 +997,7 @@ int cpu::opcode(uint8_t opcode)
 		addr += memory[sp++];
 		pc = addr;
 		
-		std::cout << "[" << std::hex << addr << std::dec << "]";
+		std::cout << "[" << std::hex << addr << std::dec << "]" << " - RET";
 	} break;
 	case inst::JP_Z_a16:
 		ui(opcode);
@@ -1031,8 +1021,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_B: {
 			reg_B = (reg_B << 1) | (reg_B >> 7);
 
-			if (reg_B == 0)
-				setZFlag(1);
+			setZFlag(reg_B == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_B & 0x1);
@@ -1040,8 +1029,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_C: {
 			reg_C = (reg_C << 1) | (reg_C >> 7);
 
-			if (reg_C == 0)
-				setZFlag(1);
+			setZFlag(reg_C == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_C & 0x1);
@@ -1049,8 +1037,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_D: {
 			reg_D = (reg_D << 1) | (reg_D >> 7);
 
-			if (reg_D == 0)
-				setZFlag(1);
+			setZFlag(reg_D == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_D & 0x1);
@@ -1058,8 +1045,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_E: {
 			reg_E = (reg_E << 1) | (reg_E >> 7);
 
-			if (reg_E == 0)
-				setZFlag(1);
+			setZFlag(reg_E == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_E & 0x1);
@@ -1067,8 +1053,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_H: {
 			reg_H = (reg_H << 1) | (reg_H >> 7);
 
-			if (reg_H == 0)
-				setZFlag(1);
+			setZFlag(reg_H == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_H & 0x1);
@@ -1076,8 +1061,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_L: {
 			reg_L = (reg_L << 1) | (reg_L >> 7);
 
-			if (reg_L == 0)
-				setZFlag(1);
+			setZFlag(reg_L == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_L & 0x1);
@@ -1087,8 +1071,7 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			memory[addr] = (memory[addr] << 1) | (memory[addr] >> 7);
 
-			if (memory[addr] == 0)
-				setZFlag(1);
+			setZFlag(memory[addr] == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(memory[addr] & 0x1);
@@ -1096,8 +1079,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RLC_A: {
 			reg_A = (reg_A << 1) | (reg_A >> 7);
 
-			if (reg_A == 0)
-				setZFlag(1);
+			setZFlag(reg_A == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_A & 0x1);
@@ -1116,8 +1098,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_B: {
 			reg_B = (reg_B >> 1) | (reg_B << 7);
 
-			if (reg_B == 0)
-				setZFlag(1);
+			setZFlag(reg_B == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_B & 0x1);
@@ -1125,8 +1106,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_C: {
 			reg_C = (reg_C >> 1) | (reg_C << 7);
 
-			if (reg_C == 0)
-				setZFlag(1);
+			setZFlag(reg_C == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_C & 0x1);
@@ -1134,8 +1114,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_D: {
 			reg_D = (reg_D >> 1) | (reg_D << 7);
 
-			if (reg_D == 0)
-				setZFlag(1);
+			setZFlag(reg_D == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_D & 0x1);
@@ -1143,8 +1122,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_E: {
 			reg_E = (reg_E >> 1) | (reg_E << 7);
 
-			if (reg_E == 0)
-				setZFlag(1);
+			setZFlag(reg_E == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_E & 0x1);
@@ -1152,8 +1130,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_H: {
 			reg_H = (reg_H >> 1) | (reg_H << 7);
 
-			if (reg_H == 0)
-				setZFlag(1);
+			setZFlag(reg_H == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_H & 0x1);
@@ -1161,8 +1138,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_L: {
 			reg_L = (reg_L >> 1) | (reg_L << 7);
 
-			if (reg_L == 0)
-				setZFlag(1);
+			setZFlag(reg_L == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_L & 0x1);
@@ -1172,8 +1148,7 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			memory[addr] = (memory[addr] >> 1) | (memory[addr] << 7);
 
-			if (memory[addr] == 0)
-				setZFlag(1);
+			setZFlag(memory[addr] == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(memory[addr] & 0x1);
@@ -1181,8 +1156,7 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RRC_A: {
 			reg_A = (reg_A >> 1) | (reg_A << 7);
 
-			if (reg_A == 0)
-				setZFlag(1);
+			setZFlag(reg_A == 0);
 			setNFlag(0);
 			setHFlag(0);
 			setCFlag(reg_A & 0x1);
@@ -1201,48 +1175,42 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RL_B: {
 			reg_B = (reg_B << 1) | getCFlag();
 
-			if (reg_B == 0)
-				setZFlag(1);
+			setZFlag(reg_B == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RL_C: {
 			reg_C = (reg_C << 1) | getCFlag();
 
-			if (reg_C == 0)
-				setZFlag(1);
+			setZFlag(reg_C == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RL_D: {
 			reg_D = (reg_D << 1) | getCFlag();
 
-			if (reg_D == 0)
-				setZFlag(1);
+			setZFlag(reg_D == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RL_E: {
 			reg_E = (reg_E << 1) | getCFlag();
 
-			if (reg_E == 0)
-				setZFlag(1);
+			setZFlag(reg_E == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RL_H: {
 			reg_H = (reg_H << 1) | getCFlag();
 
-			if (reg_H == 0)
-				setZFlag(1);
+			setZFlag(reg_H == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RL_L: {
 			reg_L = (reg_L << 1) | getCFlag();
 
-			if (reg_L == 0)
-				setZFlag(1);
+			setZFlag(reg_L == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
@@ -1251,16 +1219,14 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			memory[addr] = (memory[addr] << 1) | getCFlag();
 
-			if (memory[addr] == 0)
-				setZFlag(1);
+			setZFlag(memory[addr] == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RL_A: {
 			reg_A = (reg_A << 1) | getCFlag();
 
-			if (reg_A == 0)
-				setZFlag(1);
+			setZFlag(reg_A == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
@@ -1278,48 +1244,42 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::RR_B: {
 			reg_B = (reg_B >> 1) | (getCFlag() << 7);
 
-			if (reg_B == 0)
-				setZFlag(1);
+			setZFlag(reg_B == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RR_C: {
 			reg_C = (reg_C >> 1) | (getCFlag() << 7);
 
-			if (reg_C == 0)
-				setZFlag(1);
+			setZFlag(reg_C == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RR_D: {
 			reg_D = (reg_D >> 1) | (getCFlag() << 7);
 
-			if (reg_D == 0)
-				setZFlag(1);
+			setZFlag(reg_D == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RR_E: {
 			reg_E = (reg_E >> 1) | (getCFlag() << 7);
 
-			if (reg_E == 0)
-				setZFlag(1);
+			setZFlag(reg_E == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RR_H: {
 			reg_H = (reg_H >> 1) | (getCFlag() << 7);
 
-			if (reg_H == 0)
-				setZFlag(1);
+			setZFlag(reg_H == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RR_L: {
 			reg_L = (reg_L >> 1) | (getCFlag() << 7);
 
-			if (reg_L == 0)
-				setZFlag(1);
+			setZFlag(reg_L == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
@@ -1328,16 +1288,14 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			memory[addr] = (memory[addr] >> 1) | (getCFlag() << 7);
 
-			if (memory[addr] == 0)
-				setZFlag(1);
+			setZFlag(memory[addr] == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
 		case instCB::RR_A: {
 			reg_A = (reg_A >> 1) | (getCFlag() << 7);
 
-			if (reg_A == 0)
-				setZFlag(1);
+			setZFlag(reg_A == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
@@ -1356,18 +1314,69 @@ int cpu::opcode(uint8_t opcode)
 			setCFlag((reg_B >> 7) & 0x1);
 			reg_B = reg_B << 1;
 
-			if (reg_B == 0)
-				setZFlag(1);
+			setZFlag(reg_B == 0);
 			setNFlag(0);
 			setHFlag(0);
 		} break;
-		case instCB::SLA_C:
-		case instCB::SLA_D:
-		case instCB::SLA_E:
-		case instCB::SLA_H:
-		case instCB::SLA_L:
-		case instCB::SLA_pHL:
-		case instCB::SLA_A:
+		case instCB::SLA_C: {
+			setCFlag((reg_C >> 7) & 0x1);
+			reg_C = reg_C << 1;
+
+			setZFlag(reg_C == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::SLA_D: {
+			setCFlag((reg_D >> 7) & 0x1);
+			reg_D = reg_D << 1;
+
+			setZFlag(reg_D == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::SLA_E: {
+			setCFlag((reg_E >> 7) & 0x1);
+			reg_E = reg_E << 1;
+
+			setZFlag(reg_E == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::SLA_H: {
+			setCFlag((reg_H >> 7) & 0x1);
+			reg_H = reg_H << 1;
+
+			setZFlag(reg_H == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::SLA_L: {
+			setCFlag((reg_L >> 7) & 0x1);
+			reg_L = reg_L << 1;
+
+			setZFlag(reg_L == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::SLA_pHL: {
+			uint16_t addr = reg_L;
+			addr += reg_H << 8;
+			
+			setCFlag((memory[addr] >> 7) & 0x1);
+			memory[addr] = memory[addr] << 1;
+
+			setZFlag(memory[addr] == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
+		case instCB::SLA_A: {
+			setCFlag((reg_A >> 7) & 0x1);
+			reg_A = reg_A << 1;
+
+			setZFlag(reg_A == 0);
+			setNFlag(0);
+			setHFlag(0);
+		} break;
 			break;
 		//////////////////////////////////////
 		/*
@@ -1444,55 +1453,37 @@ int cpu::opcode(uint8_t opcode)
 			C - Not affected. */
 		case instCB::BIT_0_B: {
 			uint8_t bit = reg_B & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_0_C: {
 			uint8_t bit = reg_C & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_0_D: {
 			uint8_t bit = reg_D & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_0_E: {
 			uint8_t bit = reg_E & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_0_H: {
 			uint8_t bit = reg_H & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_0_L: {
 			uint8_t bit = reg_L & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1500,19 +1491,13 @@ int cpu::opcode(uint8_t opcode)
 			uint16_t addr = reg_L;
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_0_A: {
 			uint8_t bit = reg_A & 0b00000001;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1520,60 +1505,42 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::BIT_1_B: {
 			uint8_t bit = reg_B & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_1_C: {
 			uint8_t bit = reg_C & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_1_D: {
 			uint8_t bit = reg_D & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_1_E: {
 			uint8_t bit = reg_E & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_1_H: {
 			uint8_t bit = reg_H & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_1_L: {
 			uint8_t bit = reg_L & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1582,81 +1549,57 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_1_A: {
 			uint8_t bit = reg_A & 0b00000010;
 			bit = bit >> 1;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
-		//////////////////////////////////////
+			//////////////////////////////////////
 		case instCB::BIT_2_B: {
 			uint8_t bit = reg_B & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_2_C: {
 			uint8_t bit = reg_C & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_2_D: {
 			uint8_t bit = reg_D & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_2_E: {
 			uint8_t bit = reg_E & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_2_H: {
 			uint8_t bit = reg_H & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_2_L: {
 			uint8_t bit = reg_L & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1665,81 +1608,57 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_2_A: {
 			uint8_t bit = reg_A & 0b00000100;
 			bit = bit >> 2;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
-		//////////////////////////////////////
+			//////////////////////////////////////
 		case instCB::BIT_3_B: {
 			uint8_t bit = reg_B & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_3_C: {
 			uint8_t bit = reg_C & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_3_D: {
 			uint8_t bit = reg_D & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_3_E: {
 			uint8_t bit = reg_E & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_3_H: {
 			uint8_t bit = reg_H & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_3_L: {
 			uint8_t bit = reg_L & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1748,81 +1667,57 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_3_A: {
 			uint8_t bit = reg_A & 0b00001000;
 			bit = bit >> 3;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
-		//////////////////////////////////////
+			//////////////////////////////////////
 		case instCB::BIT_4_B: {
 			uint8_t bit = reg_B & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
-		case instCB::BIT_4_C:{
+		case instCB::BIT_4_C: {
 			uint8_t bit = reg_C & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_4_D: {
 			uint8_t bit = reg_D & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_4_E: {
 			uint8_t bit = reg_E & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_4_H: {
 			uint8_t bit = reg_H & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_4_L: {
 			uint8_t bit = reg_L & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1831,81 +1726,57 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_4_A: {
 			uint8_t bit = reg_A & 0b00010000;
 			bit = bit >> 4;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
-		//////////////////////////////////////
+			//////////////////////////////////////
 		case instCB::BIT_5_B: {
 			uint8_t bit = reg_B & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_5_C: {
 			uint8_t bit = reg_C & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_5_D: {
 			uint8_t bit = reg_D & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_5_E: {
 			uint8_t bit = reg_E & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_5_H: {
 			uint8_t bit = reg_H & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_5_L: {
 			uint8_t bit = reg_L & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1914,81 +1785,57 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_5_A: {
 			uint8_t bit = reg_A & 0b00100000;
 			bit = bit >> 5;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
-		//////////////////////////////////////
+			//////////////////////////////////////
 		case instCB::BIT_6_B: {
 			uint8_t bit = reg_B & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_6_C: {
 			uint8_t bit = reg_C & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_6_D: {
 			uint8_t bit = reg_D & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_6_E: {
 			uint8_t bit = reg_E & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_6_H: {
 			uint8_t bit = reg_H & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_6_L: {
 			uint8_t bit = reg_L & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -1997,20 +1844,14 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_6_A: {
 			uint8_t bit = reg_A & 0b01000000;
 			bit = bit >> 6;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -2018,50 +1859,35 @@ int cpu::opcode(uint8_t opcode)
 		case instCB::BIT_7_B: {
 			uint8_t bit = reg_B & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_7_C: {
 			uint8_t bit = reg_C & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_7_D: {
 			uint8_t bit = reg_D & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_7_E: {
 			uint8_t bit = reg_E & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_7_H: {
 			uint8_t bit = reg_H & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -2069,10 +1895,7 @@ int cpu::opcode(uint8_t opcode)
 		{
 			uint8_t bit = reg_L & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -2081,20 +1904,14 @@ int cpu::opcode(uint8_t opcode)
 			addr += reg_H << 8;
 			uint8_t bit = memory[addr] & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
 		case instCB::BIT_7_A: {
 			uint8_t bit = reg_A & 0b10000000;
 			bit = bit >> 7;
-			if (bit == 0)
-				setZFlag(1);
-			else
-				setZFlag(0);
+			setZFlag(bit == 0);
 			setNFlag(0);
 			setHFlag(1);
 		} break;
@@ -2561,7 +2378,7 @@ int cpu::opcode(uint8_t opcode)
 		// Read a16/nn
 		uint16_t a16 = read();
 		a16 += read() << 8;
-		std::cout << "["  << std::hex << a16 << std::dec << "]";
+		std::cout << "["  << std::hex << a16 << std::dec << "]" << " - CALL_a16";
 		// Put pc address onto stack
 		memory[--sp] = (uint8_t)pc;
 		memory[--sp] = (uint8_t)(pc >> 8);
@@ -2614,6 +2431,7 @@ int cpu::opcode(uint8_t opcode)
 		if (!booted && addr == 0x50 && memory[0xFF00 + addr] != 0) {
 			booted = true;
 			memcpy(memory, cart, cartSize);
+			std::cout << std::endl << "BOOTED" << std::endl;
 			/////////////////////////////////////////////////////////////////////////// BOOTED
 		}
 	} break;
@@ -2622,8 +2440,7 @@ int cpu::opcode(uint8_t opcode)
 	// Store the contents of register A in the internal RAM, port register, 
 	// or mode register at the address in the range 0xFF00-0xFFFF specified by register C.
 	case inst::LD_pC_A: {
-		uint8_t addr = reg_C;
-		memory[0xFF00 + addr] = reg_A;
+		memory[0xFF00 + reg_C] = reg_A;
 	} break;
 	case inst::PUSH_HL:
 	case inst::AND_a8:
@@ -2636,7 +2453,12 @@ int cpu::opcode(uint8_t opcode)
 	case inst::RST_20H:
 	case inst::ADD_SP_a8:
 	case inst::JP_pHL:
-	case inst::LD_pa16_A:
+		ui(opcode);
+	case inst::LD_pa16_A: {
+		uint16_t addr = read();
+		addr += read() << 8;
+		memory[addr] = reg_A;
+	} break;
 	case inst::XOR_d8:
 	/*
 	Description:
@@ -2696,15 +2518,10 @@ int cpu::opcode(uint8_t opcode)
 		uint8_t d8 = read();
 		uint8_t result = reg_A - d8;
 
-		if (result == 0)
-			setZFlag(1);
+		setZFlag(result == 0);
 		setNFlag(1);
-
-		if (!(((reg_A & 0xf) - (d8 & 0xf)) < 0x0))
-			setHFlag(1);
-
-		if (reg_A < d8)
-			setCFlag(1);
+		setHFlag(!(((reg_A & 0xf) - (d8 & 0xf)) < 0x0));
+		setCFlag(reg_A < d8);
 	} break;
 	/*
 	Description:
