@@ -348,7 +348,7 @@ int cpu::opcode(uint8_t opcode)
 		int s8 = (signed char)read();
 		if (((reg_F >> 7) & 0x01) == 1) {
 			pc += s8;
-			//std::cout << "jumping " << s8 << " steps to address: " << pc << std::endl;
+			std::cout << "jumping " << s8 << " steps to address: " << pc;
 		}
 	} break;
 	case inst::ADD_HL_HL:
@@ -378,7 +378,9 @@ int cpu::opcode(uint8_t opcode)
 		// This is wrong
 		setHFlag((reg_L & 0xF) == 0x0);
 	} break;
-	case inst::LD_L_d8:
+	case inst::LD_L_d8: {
+		reg_L = read();
+	} break;
 	case inst::CPL:
 	case inst::JR_NC_s8:
 		ui(opcode);
