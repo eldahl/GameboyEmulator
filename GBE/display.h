@@ -7,6 +7,7 @@ class display {
 
 public:
 	display(uint8_t* mem);
+	void Render();
 
 private:
 	uint8_t* memory;

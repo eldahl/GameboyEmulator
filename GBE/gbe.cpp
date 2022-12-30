@@ -23,7 +23,14 @@ int main(int argc, char* argv[]) {
 
 	while (running) {
 		CPU->cycle();
-
+		SDL_Event event;
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				running = false;
+			}
+		}
+		
+		Display->Render();
 	}
 	
 	return 0;

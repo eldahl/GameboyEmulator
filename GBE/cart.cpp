@@ -8,28 +8,27 @@ cart::cart(std::string romPath) {
 
 	std::ifstream romStream(romPath, std::ios::binary);
 
-	if (romStream) {
-		// Get length
-		romStream.seekg(0, romStream.end);
-		int length = romStream.tellg();
-		romStream.seekg(0, romStream.beg);
-
-		// Create buffer and read content of cartridge
-		char* buffer = new char[length];
-		romStream.read(buffer, length);
-
-		// Copy into rom memory
-		rom = new uint8_t[length];
-		for (int i = 0; i < length; i++) {
-			rom[i] = (uint8_t)buffer[i];
-			//printf("%x", rom[i]);
-		}
-
-		romSize = length;
-
-	}
-	else
+	if (!romStream) {
 		std::cout << "failed to load rom" << std::endl;
+	}
+
+	// Get length
+	romStream.seekg(0, romStream.end);
+	int length = (int)romStream.tellg();
+	romStream.seekg(0, romStream.beg);
+
+	// Create buffer and read content of cartridge
+	char* buffer = new char[length];
+	romStream.read(buffer, length);
+
+	// Copy into rom memory
+	rom = new uint8_t[length];
+	for (int i = 0; i < length; i++) {
+		rom[i] = (uint8_t)buffer[i];
+		//printf("%x", rom[i]);
+	}
+
+	romSize = length;
 
 	// Close file handle
 	romStream.close();
