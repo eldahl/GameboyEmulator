@@ -24,6 +24,8 @@ public:
 	uint8_t reg_H = NULL;
 	uint8_t reg_L = NULL;
 
+	uint8_t reg_LCDC = NULL;
+
 	/*
 	-== F register ==-
 	Zero Flag(Z) :

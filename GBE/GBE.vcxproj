@@ -147,12 +147,14 @@
     <ClCompile Include="cpu.cpp" />
     <ClCompile Include="display.cpp" />
     <ClCompile Include="gbe.cpp" />
+    <ClCompile Include="ppu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cart.h" />
     <ClInclude Include="cpu.h" />
     <ClInclude Include="display.h" />
     <ClInclude Include="inst.h" />
+    <ClInclude Include="ppu.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
