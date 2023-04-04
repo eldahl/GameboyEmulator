@@ -10,12 +10,16 @@ public:
 	uint8_t read();
 	void cycle();
 	int opcode(uint8_t);
-	void printRegisters();
 
+	void printRegisters(); //DEBUG
+
+	// Cartridge
 	size_t cartSize = 0;
 	uint8_t* cart = NULL;
-	uint8_t memory[65536];
-
+	
+	uint8_t memory[0xFFFF];
+	
+	// Registers
 	uint8_t reg_A = NULL;
 	uint8_t reg_B = NULL;
 	uint8_t reg_C = NULL;
@@ -23,9 +27,8 @@ public:
 	uint8_t reg_E = NULL;
 	uint8_t reg_H = NULL;
 	uint8_t reg_L = NULL;
-
-	uint8_t reg_LCDC = NULL;
-
+	
+	uint8_t reg_F = NULL;
 	/*
 	-== F register ==-
 	Zero Flag(Z) :
@@ -45,19 +48,24 @@ public:
 		This bit is set if a carry occurred from the last
 		math operation or if register A is the smaller value
 		when executing the CP instruction. */
-	uint8_t reg_F = NULL;
-	
+
+	// Flags
 	uint8_t getZFlag();
 	uint8_t getNFlag();
 	uint8_t getHFlag();
 	uint8_t getCFlag();
 
+	// Get pointer to memory location
+	uint8_t* getMemRef(uint16_t addr);
+
+	// Stack Pointer and Program Counter
 	uint16_t sp = NULL;
 	uint16_t pc = NULL;
 
 private:
 	bool booted = false;
 
+	// Flags
 	void setZFlag(uint8_t);
 	void setNFlag(uint8_t);
 	void setHFlag(uint8_t);
